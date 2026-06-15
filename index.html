@@ -79,7 +79,8 @@
   .group-header { display: flex; align-items: center; gap: 8px; margin: 1.25rem 0 0.5rem; }
   .group-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; background: var(--surface-2); border-radius: 20px; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
 
-  .lb-row { display: grid; grid-template-columns: 28px 1fr 56px; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .lb-row { display: grid; grid-template-columns: 28px 1fr 56px; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; transition: background 0.1s; }
+  .lb-row:hover { background: var(--surface-2); }
   .lb-row:last-child { border-bottom: none; }
   .lb-rank { font-size: 13px; color: var(--text-tertiary); text-align: center; }
   .lb-rank.top { font-weight: 700; color: var(--text); }
@@ -570,7 +571,53 @@ function scorePlayoffPicks(playerPicks, playoffMatches) {
   return { total, correct, completed };
 }
 
+function PlayerDetail({ player, groupMatches }) {
+  const picks = player.perGroupPicks || {};
+  const anyMatchesSynced = groupMatches.length > 0;
+
+  return (
+    <div className="card" style={{marginTop:'-4px', marginBottom:'0.75rem', background:'var(--surface-2)'}}>
+      {!player.hasPicks ? (
+        <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>{player.name} hasn't submitted group picks yet.</p>
+      ) : (
+        GROUP_NAMES.map(g => {
+          const predicted = picks[g] || GROUPS[g];
+          const standings = computeGroupStandings(g, groupMatches);
+          const anyPlayed = standings.some(r => r.played > 0);
+          return (
+            <div key={g} style={{marginBottom:'0.75rem'}}>
+              <div style={{fontSize:'11px', fontWeight:600, color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'4px'}}>Group {g}</div>
+              <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
+                {predicted.map((team, idx) => {
+                  const predictedRank = idx + 1;
+                  let mark = null;
+                  if (anyMatchesSynced && anyPlayed) {
+                    const actualRow = standings[idx]; // team actually in this position
+                    const actualRank = standings.findIndex(r => r.team === team) + 1;
+                    const correct = actualRank === predictedRank;
+                    mark = correct ? '✓' : null;
+                  }
+                  return (
+                    <div key={team} style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px'}}>
+                      <span style={{width:'18px', color:'var(--text-tertiary)', fontSize:'11px'}}>{predictedRank}.</span>
+                      <span>{flagFor(team)}</span>
+                      <span style={{flex:1}}>{team}</span>
+                      {mark && <span style={{color:'var(--green-text)', fontWeight:700}}>{mark}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 function LeaderboardTab({ players, groupPicks, groupMatches, playoffMatches, playoffPicks }) {
+  const [expanded, setExpanded] = useState(null);
+
   if (players.length === 0) {
     return <div className="empty-state"><div className="icon">⚽</div>No players yet &mdash; share the picks link to get started.</div>;
   }
@@ -583,7 +630,7 @@ function LeaderboardTab({ players, groupPicks, groupMatches, playoffMatches, pla
     const { total: groupTotal, perGroup } = scoreGroupPicks(groupPicks[p], groupMatches);
     const { total: playoffTotal, correct: playoffCorrect } = scorePlayoffPicks(playoffPicks[p], playoffMatches);
     const hasPicks = !!groupPicks[p];
-    return { name: p, groupTotal, playoffTotal, playoffCorrect, total: groupTotal + playoffTotal, perGroup, hasPicks };
+    return { name: p, groupTotal, playoffTotal, playoffCorrect, total: groupTotal + playoffTotal, perGroup, perGroupPicks: groupPicks[p], hasPicks };
   }).sort((a, b) => b.total - a.total);
 
   const medals = ['🥇', '🥈', '🥉'];
@@ -605,14 +652,17 @@ function LeaderboardTab({ players, groupPicks, groupMatches, playoffMatches, pla
           <span>#</span><span>Player</span><span>Pts</span>
         </div>
         {data.map((p, i) => (
-          <div className="lb-row" key={p.name}>
-            <div className={`lb-rank ${i < 3 ? 'top' : ''}`}>{medals[i] || i + 1}</div>
-            <div className="lb-name">
-              {p.name}{!p.hasPicks ? ' (no picks yet)' : ''}
-              {anyPlayoffSynced && <div style={{fontSize:'11px', color:'var(--text-tertiary)', marginTop:'2px'}}>Group {p.groupTotal} &middot; Bracket {p.playoffTotal}</div>}
+          <React.Fragment key={p.name}>
+            <div className="lb-row" style={{cursor:'pointer'}} onClick={() => setExpanded(expanded === p.name ? null : p.name)}>
+              <div className={`lb-rank ${i < 3 ? 'top' : ''}`}>{medals[i] || i + 1}</div>
+              <div className="lb-name">
+                {p.name}{!p.hasPicks ? ' (no picks yet)' : ''}
+                {anyPlayoffSynced && <div style={{fontSize:'11px', color:'var(--text-tertiary)', marginTop:'2px'}}>Group {p.groupTotal} &middot; Bracket {p.playoffTotal}</div>}
+              </div>
+              <div className="lb-pts">{p.total}</div>
             </div>
-            <div className="lb-pts">{p.total}</div>
-          </div>
+            {expanded === p.name && <PlayerDetail player={p} groupMatches={groupMatches} />}
+          </React.Fragment>
         ))}
       </div>
 

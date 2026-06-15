@@ -303,12 +303,13 @@ function App() {
       });
     });
     setSaving(true);
-    // Delete existing rows for this player first (positions can shift, conflicts on unique constraints otherwise)
-    const { error: delErr } = await supabase.from('group_picks').delete().eq('player_name', active);
-    if (delErr) { setSaving(false); showToast('Save failed - check connection'); console.error(delErr); return; }
-    const { error } = await supabase.from('group_picks').insert(rows);
+    const { error } = await supabase.from('group_picks').upsert(rows, { onConflict: 'player_name,group_name,team' });
     setSaving(false);
-    if (error) { showToast('Save failed - check connection'); console.error(error); return; }
+    if (error) {
+      showToast('Save failed - check connection');
+      console.error('group_picks upsert error', error);
+      return;
+    }
     setSaved(true);
     showToast('Group picks saved!');
     setTimeout(() => setSaved(false), 2000);
