@@ -96,11 +96,7 @@
   .result-btn.picked-home { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
   .result-btn.picked-draw { background: var(--border-light); color: var(--text); border-color: var(--text-tertiary); }
   .result-btn.picked-away { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
-  .result-btn:disabled, .score-inputs input:disabled { cursor: not-allowed; opacity: 0.7; }
-  .score-inputs { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
-  .score-inputs input { width: 48px; text-align: center; padding: 5px 0; font-size: 14px; font-weight: 600; }
-  .score-inputs .score-sep { font-size: 13px; color: var(--text-tertiary); }
-  .score-hint { font-size: 11px; color: var(--text-tertiary); text-align: center; margin-top: 4px; }
+  .result-btn:disabled { cursor: not-allowed; opacity: 0.7; }
 
   .group-header { display: flex; align-items: center; gap: 8px; margin: 1.25rem 0 0.5rem; }
   .group-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; background: var(--surface-2); border-radius: 20px; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
@@ -113,22 +109,21 @@
   .save-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green-text); }
   .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  .lb-row { display: grid; grid-template-columns: 28px 1fr 48px 48px 48px; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .lb-row { display: grid; grid-template-columns: 28px 1fr 48px 48px; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .lb-row:last-child { border-bottom: none; }
   .lb-rank { font-size: 13px; color: var(--text-tertiary); text-align: center; }
   .lb-rank.top { font-weight: 700; color: var(--text); }
   .lb-name { font-weight: 500; }
   .lb-pts { text-align: center; font-weight: 700; font-size: 16px; }
   .lb-sub { text-align: center; font-size: 12px; color: var(--text-tertiary); }
-  .lb-header { display: grid; grid-template-columns: 28px 1fr 48px 48px 48px; gap: 8px; padding: 0 0 10px; border-bottom: 1px solid var(--border-light); }
+  .lb-header { display: grid; grid-template-columns: 28px 1fr 48px 48px; gap: 8px; padding: 0 0 10px; border-bottom: 1px solid var(--border-light); }
   .lb-header span { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
   .lb-header span:nth-child(2) { text-align: left; }
 
   .admin-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 0.6rem; }
-  .result-row { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+  .result-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; font-size: 14px; }
   .result-row .r-name { font-weight: 500; font-size: 13px; }
   .result-row .r-vs { color: var(--text-tertiary); font-size: 12px; }
-  .result-row select { font-size: 12px; padding: 5px 8px; }
 
   .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); font-size: 14px; }
   .empty-state .icon { font-size: 32px; margin-bottom: 0.75rem; }
@@ -163,6 +158,8 @@
   .lock-banner { display: flex; align-items: center; gap: 10px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--amber); }
   .espn-sync-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; }
   .espn-sync-card .btn { white-space: nowrap; }
+  .result-status { text-align: center; font-size: 13px; color: var(--text-tertiary); margin-top: 8px; font-weight: 500; }
+  .result-status.has-result { color: var(--text); }
 
   .loading { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
   .spinner { width: 28px; height: 28px; border: 3px solid var(--border-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
@@ -177,136 +174,55 @@
 <script type="text/babel" data-presets="react,env">
 const { useState, useEffect, useCallback, useMemo } = React;
 
-// ---- Supabase config ----
 const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_PASSWORD = "btb2026";
 const ESPN_PROXY_URL = "https://guitar-proxy.tight-meadow-3e46.workers.dev/wc2026";
+const TOURNAMENT_DATES = "20260611-20260719";
 
-// ---- Tournament data ----
-const GROUPS = {
-  A: [{h:'USA',hf:'\u{1F1FA}\u{1F1F8}',a:'Mexico',af:'\u{1F1F2}\u{1F1FD}'},{h:'Canada',hf:'\u{1F1E8}\u{1F1E6}',a:'Uruguay',af:'\u{1F1FA}\u{1F1FE}'}],
-  B: [{h:'Argentina',hf:'\u{1F1E6}\u{1F1F7}',a:'Ecuador',af:'\u{1F1EA}\u{1F1E8}'},{h:'Chile',hf:'\u{1F1E8}\u{1F1F1}',a:'Peru',af:'\u{1F1F5}\u{1F1EA}'}],
-  C: [{h:'Brazil',hf:'\u{1F1E7}\u{1F1F7}',a:'Colombia',af:'\u{1F1E8}\u{1F1F4}'},{h:'Paraguay',hf:'\u{1F1F5}\u{1F1FE}',a:'Venezuela',af:'\u{1F1FB}\u{1F1EA}'}],
-  D: [{h:'England',hf:'\u{1F3F4}',a:'France',af:'\u{1F1EB}\u{1F1F7}'},{h:'Germany',hf:'\u{1F1E9}\u{1F1EA}',a:'Netherlands',af:'\u{1F1F3}\u{1F1F1}'}],
-  E: [{h:'Spain',hf:'\u{1F1EA}\u{1F1F8}',a:'Portugal',af:'\u{1F1F5}\u{1F1F9}'},{h:'Belgium',hf:'\u{1F1E7}\u{1F1EA}',a:'Croatia',af:'\u{1F1ED}\u{1F1F7}'}],
-  F: [{h:'Morocco',hf:'\u{1F1F2}\u{1F1E6}',a:'Senegal',af:'\u{1F1F8}\u{1F1F3}'},{h:'Egypt',hf:'\u{1F1EA}\u{1F1EC}',a:'Cameroon',af:'\u{1F1E8}\u{1F1F2}'}],
-  G: [{h:'Japan',hf:'\u{1F1EF}\u{1F1F5}',a:'South Korea',af:'\u{1F1F0}\u{1F1F7}'},{h:'Australia',hf:'\u{1F1E6}\u{1F1FA}',a:'Saudi Arabia',af:'\u{1F1F8}\u{1F1E6}'}],
-  H: [{h:'Iran',hf:'\u{1F1EE}\u{1F1F7}',a:'Qatar',af:'\u{1F1F6}\u{1F1E6}'},{h:'Nigeria',hf:'\u{1F1F3}\u{1F1EC}',a:'Ghana',af:'\u{1F1EC}\u{1F1ED}'}]
+const ROUND_POINTS = { group: 2, r32: 3, r16: 4, qf: 5, sf: 6, final: 8 };
+
+const ROUND_LABELS = {
+  group: 'Group stage',
+  r32: 'Round of 32',
+  r16: 'Round of 16',
+  qf: 'Quarter-finals',
+  sf: 'Semi-finals',
+  final: 'Final'
 };
 
-const KO_ROUNDS = [
-  { id: 'r16', label: 'Round of 16', pts: 3, matches: [
-    {id:'r16_1',h:'1A',a:'2B'},{id:'r16_2',h:'1B',a:'2A'},
-    {id:'r16_3',h:'1C',a:'2D'},{id:'r16_4',h:'1D',a:'2C'},
-    {id:'r16_5',h:'1E',a:'2F'},{id:'r16_6',h:'1F',a:'2E'},
-    {id:'r16_7',h:'1G',a:'2H'},{id:'r16_8',h:'1H',a:'2G'}
-  ]},
-  { id: 'qf', label: 'Quarter-finals', pts: 4, matches: [
-    {id:'qf_1',h:'W R16-1',a:'W R16-2'},{id:'qf_2',h:'W R16-3',a:'W R16-4'},
-    {id:'qf_3',h:'W R16-5',a:'W R16-6'},{id:'qf_4',h:'W R16-7',a:'W R16-8'}
-  ]},
-  { id: 'sf', label: 'Semi-finals', pts: 6, matches: [
-    {id:'sf_1',h:'W QF-1',a:'W QF-2'},{id:'sf_2',h:'W QF-3',a:'W QF-4'}
-  ]},
-  { id: 'final', label: 'Final', pts: 8, matches: [
-    {id:'final_1',h:'W SF-1',a:'W SF-2'}
-  ]}
-];
+const ROUND_ORDER = ['group', 'r32', 'r16', 'qf', 'sf', 'final'];
 
-function allMatches() {
-  const list = [];
-  Object.entries(GROUPS).forEach(([g, ms]) => ms.forEach((m,i) => list.push({ id: `${g}_${i}`, h: m.h, hf: m.hf, a: m.a, af: m.af, pts: 2, allowDraw: true, label: `Group ${g}` })));
-  KO_ROUNDS.forEach(r => r.matches.forEach(m => list.push({ id: m.id, h: m.h, hf: '\u{1F30D}', a: m.a, af: '\u{1F30D}', pts: r.pts, allowDraw: false, label: r.label })));
-  return list;
-}
-const ALL_MATCHES = allMatches();
-const ALL_MATCH_IDS = ALL_MATCHES.map(m => m.id);
-
-// ESPN sometimes uses different display names than ours - map ESPN name -> our name
-const ESPN_NAME_MAP = {
-  'South Korea': 'South Korea',
-  'Korea Republic': 'South Korea',
-  'USA': 'USA',
-  'United States': 'USA',
-  'IR Iran': 'Iran',
-  'Iran': 'Iran',
-  'Saudi Arabia': 'Saudi Arabia',
-  'KSA': 'Saudi Arabia',
-  'England': 'England',
-  'Cote d\'Ivoire': 'Ivory Coast'
+const SLUG_TO_ROUND = {
+  'group-stage': 'group',
+  'round-of-32': 'r32',
+  'round-of-16': 'r16',
+  'quarterfinal': 'qf',
+  'quarterfinals': 'qf',
+  'semifinal': 'sf',
+  'semifinals': 'sf',
+  'final': 'final'
 };
 
-function normalizeTeamName(espnName) {
-  if (!espnName) return espnName;
-  return ESPN_NAME_MAP[espnName] || espnName;
+const FLAGS = {
+  'Mexico': '\u{1F1F2}\u{1F1FD}', 'South Africa': '\u{1F1FF}\u{1F1E6}', 'South Korea': '\u{1F1F0}\u{1F1F7}', 'Korea Republic': '\u{1F1F0}\u{1F1F7}', 'Czechia': '\u{1F1E8}\u{1F1FF}', 'Czech Republic': '\u{1F1E8}\u{1F1FF}',
+  'Canada': '\u{1F1E8}\u{1F1E6}', 'Switzerland': '\u{1F1E8}\u{1F1ED}', 'Qatar': '\u{1F1F6}\u{1F1E6}', 'Bosnia and Herzegovina': '\u{1F1E7}\u{1F1E6}', 'Bosnia & Herzegovina': '\u{1F1E7}\u{1F1E6}',
+  'Brazil': '\u{1F1E7}\u{1F1F7}', 'Morocco': '\u{1F1F2}\u{1F1E6}', 'Haiti': '\u{1F1ED}\u{1F1F9}', 'Scotland': '\u{1F3F4}',
+  'USA': '\u{1F1FA}\u{1F1F8}', 'United States': '\u{1F1FA}\u{1F1F8}', 'Turkey': '\u{1F1F9}\u{1F1F7}', 'Türkiye': '\u{1F1F9}\u{1F1F7}', 'Australia': '\u{1F1E6}\u{1F1FA}', 'Paraguay': '\u{1F1F5}\u{1F1FE}',
+  'Germany': '\u{1F1E9}\u{1F1EA}', 'Ecuador': '\u{1F1EA}\u{1F1E8}', 'Ivory Coast': '\u{1F1E8}\u{1F1EE}', "Côte d'Ivoire": '\u{1F1E8}\u{1F1EE}', 'Curacao': '\u{1F1E8}\u{1F1FC}', 'Curaçao': '\u{1F1E8}\u{1F1FC}',
+  'Netherlands': '\u{1F1F3}\u{1F1F1}', 'Japan': '\u{1F1EF}\u{1F1F5}', 'Sweden': '\u{1F1F8}\u{1F1EA}', 'Tunisia': '\u{1F1F9}\u{1F1F3}',
+  'Belgium': '\u{1F1E7}\u{1F1EA}', 'Egypt': '\u{1F1EA}\u{1F1EC}', 'Iran': '\u{1F1EE}\u{1F1F7}', 'IR Iran': '\u{1F1EE}\u{1F1F7}', 'New Zealand': '\u{1F1F3}\u{1F1FF}',
+  'Spain': '\u{1F1EA}\u{1F1F8}', 'Cape Verde': '\u{1F1E8}\u{1F1FB}', 'Cabo Verde': '\u{1F1E8}\u{1F1FB}', 'Saudi Arabia': '\u{1F1F8}\u{1F1E6}', 'Uruguay': '\u{1F1FA}\u{1F1FE}',
+  'France': '\u{1F1EB}\u{1F1F7}', 'Senegal': '\u{1F1F8}\u{1F1F3}', 'Iraq': '\u{1F1EE}\u{1F1F6}', 'Norway': '\u{1F1F3}\u{1F1F4}',
+  'Argentina': '\u{1F1E6}\u{1F1F7}', 'Algeria': '\u{1F1E9}\u{1F1FF}', 'Austria': '\u{1F1E6}\u{1F1F9}', 'Jordan': '\u{1F1EF}\u{1F1F4}',
+  'Portugal': '\u{1F1F5}\u{1F1F9}', 'DR Congo': '\u{1F1E8}\u{1F1E9}', 'Congo DR': '\u{1F1E8}\u{1F1E9}', 'Uzbekistan': '\u{1F1FA}\u{1F1FF}', 'Colombia': '\u{1F1E8}\u{1F1F4}',
+  'England': '\u{1F3F4}', 'Croatia': '\u{1F1ED}\u{1F1F7}', 'Ghana': '\u{1F1EC}\u{1F1ED}', 'Panama': '\u{1F1F5}\u{1F1E6}'
+};
+function flagFor(teamName) {
+  return FLAGS[teamName] || '\u{1F30D}';
 }
 
-// Build a lookup of "TeamA|TeamB" (sorted) -> matchId for group stage matches
-function buildGroupMatchLookup() {
-  const lookup = {};
-  Object.entries(GROUPS).forEach(([g, ms]) => {
-    ms.forEach((m, i) => {
-      const key = [m.h, m.a].sort().join('|');
-      lookup[key] = `${g}_${i}`;
-    });
-  });
-  return lookup;
-}
-const GROUP_MATCH_LOOKUP = buildGroupMatchLookup();
-
-// Parse ESPN scoreboard response into { matchId: { result, score_home, score_away } } for completed matches
-function parseEspnResults(espnData) {
-  const out = {};
-  const events = espnData?.events || [];
-  events.forEach(ev => {
-    const comp = ev?.competitions?.[0];
-    if (!comp) return;
-    const completed = comp?.status?.type?.completed;
-    if (!completed) return;
-
-    const competitors = comp.competitors || [];
-    const home = competitors.find(c => c.homeAway === 'home');
-    const away = competitors.find(c => c.homeAway === 'away');
-    if (!home || !away) return;
-
-    const homeName = normalizeTeamName(home.team?.displayName || home.team?.name);
-    const awayName = normalizeTeamName(away.team?.displayName || away.team?.name);
-    const homeScore = home.score !== undefined ? Number(home.score) : null;
-    const awayScore = away.score !== undefined ? Number(away.score) : null;
-    if (homeScore === null || awayScore === null) return;
-
-    const key = [homeName, awayName].sort().join('|');
-    const matchId = GROUP_MATCH_LOOKUP[key];
-    if (!matchId) return; // not a group match we're tracking (or knockout - matched separately later)
-
-    // Figure out which of our h/a corresponds to ESPN's home/away to set result correctly
-    const match = ALL_MATCHES.find(m => m.id === matchId);
-    let ourHomeScore, ourAwayScore;
-    if (match.h === homeName) {
-      ourHomeScore = homeScore; ourAwayScore = awayScore;
-    } else {
-      ourHomeScore = awayScore; ourAwayScore = homeScore;
-    }
-
-    let result;
-    if (ourHomeScore > ourAwayScore) result = 'home';
-    else if (ourHomeScore < ourAwayScore) result = 'away';
-    else result = 'draw';
-
-    out[matchId] = { result, score_home: ourHomeScore, score_away: ourAwayScore };
-  });
-  return out;
-}
-
-function matchLabel(mid) {
-  const m = ALL_MATCHES.find(x => x.id === mid);
-  if (!m) return mid;
-  return `${m.hf} ${m.h} vs ${m.af} ${m.a}`;
-}
-
-// ---- Toast ----
 function useToast() {
   const [msg, setMsg] = useState(null);
   const show = useCallback((m) => {
@@ -316,12 +232,60 @@ function useToast() {
   return [msg, show];
 }
 
-// ---- Main App ----
+function parseEspnEvent(ev) {
+  const comp = ev?.competitions?.[0];
+  if (!comp) return null;
+
+  const slug = ev?.season?.slug;
+  const round = SLUG_TO_ROUND[slug];
+  if (!round) return null;
+
+  let groupName = null;
+  if (round === 'group' && comp.altGameNote) {
+    const m = comp.altGameNote.match(/Group\s+([A-L])/i);
+    if (m) groupName = m[1].toUpperCase();
+  }
+
+  const competitors = comp.competitors || [];
+  const home = competitors.find(c => c.homeAway === 'home');
+  const away = competitors.find(c => c.homeAway === 'away');
+  if (!home || !away) return null;
+
+  const homeTeam = home.team?.displayName || home.team?.name || home.team?.shortDisplayName;
+  const awayTeam = away.team?.displayName || away.team?.name || away.team?.shortDisplayName;
+  if (!homeTeam || !awayTeam) return null;
+
+  const completed = !!comp.status?.type?.completed;
+  let result = null;
+  if (completed) {
+    const hs = home.score !== undefined ? Number(home.score) : null;
+    const as = away.score !== undefined ? Number(away.score) : null;
+    if (hs !== null && as !== null) {
+      if (hs > as) result = 'home';
+      else if (hs < as) result = 'away';
+      else result = 'draw';
+    }
+  }
+
+  return {
+    id: ev.id,
+    round,
+    group_name: groupName,
+    home_team: homeTeam,
+    away_team: awayTeam,
+    home_flag: flagFor(homeTeam),
+    away_flag: flagFor(awayTeam),
+    match_date: ev.date || comp.date || null,
+    pts: ROUND_POINTS[round] || 2,
+    result
+  };
+}
+
 function App() {
   const [tab, setTab] = useState('setup');
   const [players, setPlayers] = useState([]);
-  const [picks, setPicks] = useState({}); // { playerName: { matchId: { result, score_home, score_away } } }
-  const [results, setResults] = useState({}); // { matchId: { result, score_home, score_away } }
+  const [matches, setMatches] = useState([]);
+  const [picks, setPicks] = useState({});
   const [loading, setLoading] = useState(true);
   const [syncOk, setSyncOk] = useState(true);
   const [locks, setLocks] = useState({ group_locked: false, knockout_locked: false });
@@ -330,37 +294,25 @@ function App() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [{ data: pl, error: e1 }, { data: pk, error: e2 }, { data: rs, error: e3 }, { data: st, error: e4 }] = await Promise.all([
+      const [{ data: pl, error: e1 }, { data: mt, error: e2 }, { data: pk, error: e3 }, { data: st, error: e4 }] = await Promise.all([
         supabase.from('players').select('*').order('created_at', { ascending: true }),
+        supabase.from('matches').select('*'),
         supabase.from('picks').select('*'),
-        supabase.from('results').select('*'),
         supabase.from('tournament_status').select('*').eq('id', 1).maybeSingle()
       ]);
       if (e1 || e2 || e3) throw (e1 || e2 || e3);
       if (e4) console.error('Status load error', e4);
 
       setPlayers((pl || []).map(p => p.name));
+      setMatches(mt || []);
 
       const picksByPlayer = {};
       (pk || []).forEach(row => {
         if (!picksByPlayer[row.player_name]) picksByPlayer[row.player_name] = {};
-        picksByPlayer[row.player_name][row.match_id] = {
-          result: row.result,
-          score_home: row.score_home,
-          score_away: row.score_away
-        };
+        picksByPlayer[row.player_name][row.match_id] = row.pick;
       });
       setPicks(picksByPlayer);
 
-      const resultsByMatch = {};
-      (rs || []).forEach(row => {
-        resultsByMatch[row.match_id] = {
-          result: row.result,
-          score_home: row.score_home,
-          score_away: row.score_away
-        };
-      });
-      setResults(resultsByMatch);
       if (st) setLocks({ group_locked: !!st.group_locked, knockout_locked: !!st.knockout_locked });
       setSyncOk(true);
     } catch (err) {
@@ -373,12 +325,11 @@ function App() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Realtime subscriptions
   useEffect(() => {
     const channel = supabase.channel('wc2026-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_status' }, loadAll)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -405,13 +356,11 @@ function App() {
 
   const savePicksForPlayer = async (playerName, playerPicks) => {
     const rows = Object.entries(playerPicks)
-      .filter(([, v]) => v && v.result)
-      .map(([matchId, v]) => ({
+      .filter(([, v]) => v)
+      .map(([matchId, pick]) => ({
         player_name: playerName,
         match_id: matchId,
-        result: v.result,
-        score_home: v.score_home === '' || v.score_home === undefined ? null : Number(v.score_home),
-        score_away: v.score_away === '' || v.score_away === undefined ? null : Number(v.score_away)
+        pick
       }));
     if (rows.length === 0) { showToast('No picks to save'); return false; }
     const { error } = await supabase.from('picks').upsert(rows, { onConflict: 'player_name,match_id' });
@@ -419,26 +368,7 @@ function App() {
     return true;
   };
 
-  const saveResult = async (matchId, result, scoreHome, scoreAway) => {
-    if (!result) {
-      const { error } = await supabase.from('results').delete().eq('match_id', matchId);
-      if (error) { console.error(error); return false; }
-      setResults(prev => { const c = { ...prev }; delete c[matchId]; return c; });
-      return true;
-    }
-    const row = {
-      match_id: matchId,
-      result,
-      score_home: scoreHome === '' || scoreHome === undefined ? null : Number(scoreHome),
-      score_away: scoreAway === '' || scoreAway === undefined ? null : Number(scoreAway)
-    };
-    const { error } = await supabase.from('results').upsert(row, { onConflict: 'match_id' });
-    if (error) { showToast('Save failed'); console.error(error); return false; }
-    setResults(prev => ({ ...prev, [matchId]: { result, score_home: row.score_home, score_away: row.score_away } }));
-    return true;
-  };
-
-  const resultsCount = Object.keys(results).length;
+  const resultsCount = matches.filter(m => m.result).length;
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -473,53 +403,41 @@ function App() {
     showToast(value ? 'Locked' : 'Unlocked');
   };
 
-  // ---- ESPN sync ----
   const [espnSyncing, setEspnSyncing] = useState(false);
   const [espnLastSync, setEspnLastSync] = useState(null);
   const [espnError, setEspnError] = useState(false);
 
-  const syncFromEspn = useCallback(async (silent) => {
+  const syncFromEspn = useCallback(async () => {
     setEspnSyncing(true);
     try {
-      const resp = await fetch(ESPN_PROXY_URL);
+      const resp = await fetch(`${ESPN_PROXY_URL}?dates=${TOURNAMENT_DATES}`);
       if (!resp.ok) throw new Error('ESPN proxy error ' + resp.status);
       const data = await resp.json();
-      const parsed = parseEspnResults(data);
+      const events = data?.events || [];
 
-      const rows = Object.entries(parsed).map(([matchId, v]) => ({
-        match_id: matchId,
-        result: v.result,
-        score_home: v.score_home,
-        score_away: v.score_away
-      }));
+      const rows = events.map(parseEspnEvent).filter(Boolean);
 
       if (rows.length > 0) {
-        const { error } = await supabase.from('results').upsert(rows, { onConflict: 'match_id' });
+        const { error } = await supabase.from('matches').upsert(rows, { onConflict: 'id' });
         if (error) throw error;
-        setResults(prev => {
-          const next = { ...prev };
-          rows.forEach(r => { next[r.match_id] = { result: r.result, score_home: r.score_home, score_away: r.score_away }; });
-          return next;
+        setMatches(prev => {
+          const byId = {};
+          prev.forEach(m => { byId[m.id] = m; });
+          rows.forEach(r => { byId[r.id] = { ...byId[r.id], ...r }; });
+          return Object.values(byId);
         });
       }
       setEspnLastSync(new Date());
       setEspnError(false);
-      if (!silent) showToast(rows.length > 0 ? `Synced ${rows.length} result${rows.length === 1 ? '' : 's'} from ESPN` : 'No new results from ESPN');
+      showToast(rows.length > 0 ? `Synced ${rows.length} match${rows.length === 1 ? '' : 'es'} from ESPN` : 'No matches found from ESPN');
     } catch (err) {
       console.error('ESPN sync error', err);
       setEspnError(true);
-      if (!silent) showToast('ESPN sync failed - check worker proxy');
+      showToast('ESPN sync failed - check worker proxy');
     } finally {
       setEspnSyncing(false);
     }
   }, [showToast]);
-
-  // Auto-poll ESPN every 60s
-  useEffect(() => {
-    syncFromEspn(true);
-    const interval = setInterval(() => syncFromEspn(true), 60000);
-    return () => clearInterval(interval);
-  }, [syncFromEspn]);
 
   return (
     <div className="app">
@@ -529,10 +447,10 @@ function App() {
         <div className="loading"><div className="spinner"></div>Loading tournament data...</div>
       ) : (
         <>
-          {tab === 'setup' && <SetupTab players={players} addPlayer={addPlayer} removePlayer={removePlayer} locks={locks} isAdmin={isAdmin} setLock={setLock} adminLogin={adminLogin} adminLogout={adminLogout} />}
-          {tab === 'picks' && <PicksTab players={players} picks={picks} setPicks={setPicks} savePicksForPlayer={savePicksForPlayer} showToast={showToast} locks={locks} />}
-          {tab === 'results' && <ResultsTab results={results} saveResult={saveResult} showToast={showToast} onEspnSync={() => syncFromEspn(false)} espnSyncing={espnSyncing} espnLastSync={espnLastSync} espnError={espnError} />}
-          {tab === 'leaderboard' && <LeaderboardTab players={players} picks={picks} results={results} />}
+          {tab === 'setup' && <SetupTab players={players} addPlayer={addPlayer} removePlayer={removePlayer} locks={locks} isAdmin={isAdmin} setLock={setLock} adminLogin={adminLogin} adminLogout={adminLogout} matches={matches} onEspnSync={syncFromEspn} espnSyncing={espnSyncing} espnLastSync={espnLastSync} espnError={espnError} />}
+          {tab === 'picks' && <PicksTab players={players} matches={matches} picks={picks} setPicks={setPicks} savePicksForPlayer={savePicksForPlayer} showToast={showToast} locks={locks} />}
+          {tab === 'results' && <ResultsTab matches={matches} onEspnSync={syncFromEspn} espnSyncing={espnSyncing} espnLastSync={espnLastSync} espnError={espnError} />}
+          {tab === 'leaderboard' && <LeaderboardTab players={players} matches={matches} picks={picks} />}
         </>
       )}
       <div className="footer-note">BTB World Cup 2026 Fantasy Challenge &middot; shared live via Supabase</div>
@@ -548,7 +466,7 @@ function Header({ players, resultsCount, syncOk, onRefresh, refreshing }) {
         <span className="trophy">🏆</span>
         <div>
           <h1>BTB WC 2026</h1>
-          <div className="header-sub">{players.length} players &middot; {resultsCount} results entered</div>
+          <div className="header-sub">{players.length} players &middot; {resultsCount} results in</div>
         </div>
       </div>
       <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
@@ -575,11 +493,18 @@ function Nav({ tab, setTab }) {
   );
 }
 
-function SetupTab({ players, addPlayer, removePlayer, locks, isAdmin, setLock, adminLogin, adminLogout }) {
+function SetupTab({ players, addPlayer, removePlayer, locks, isAdmin, setLock, adminLogin, adminLogout, matches, onEspnSync, espnSyncing, espnLastSync, espnError }) {
   const [name, setName] = useState('');
   const [pw, setPw] = useState('');
   const submit = () => { addPlayer(name); setName(''); };
   const submitAdmin = () => { if (adminLogin(pw)) setPw(''); };
+
+  const lastSyncLabel = espnLastSync
+    ? espnLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  const groupMatchCount = matches.filter(m => m.round === 'group').length;
+
   return (
     <div>
       <p className="section-label">Players</p>
@@ -602,6 +527,19 @@ function SetupTab({ players, addPlayer, removePlayer, locks, isAdmin, setLock, a
             ))}
           </div>
         )}
+      </div>
+
+      <p className="section-label" style={{marginTop:'1.25rem'}}>Tournament data</p>
+      <div className="card espn-sync-card">
+        <div>
+          <div className="lock-title">Fixtures &amp; results from ESPN</div>
+          <div className="lock-sub">
+            {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : lastSyncLabel ? `Last synced ${lastSyncLabel} \u00b7 ${groupMatchCount} group matches loaded` : groupMatchCount > 0 ? `${groupMatchCount} group matches loaded` : 'Not synced yet \u2014 tap Sync now'}
+          </div>
+        </div>
+        <button className="btn" onClick={onEspnSync} disabled={espnSyncing}>
+          {espnSyncing ? 'Syncing...' : 'Sync now'}
+        </button>
       </div>
 
       <p className="section-label" style={{marginTop:'1.25rem'}}>Tournament status</p>
@@ -650,66 +588,65 @@ function SetupTab({ players, addPlayer, removePlayer, locks, isAdmin, setLock, a
 
       <p className="section-label" style={{marginTop:'1.25rem'}}>Scoring rules</p>
       <div className="card">
-        <div className="rules-row"><span>Group stage &middot; correct result</span><span className="pts">2 pts</span></div>
+        <div className="rules-row"><span>Group stage &middot; correct result</span><span className="pts">{ROUND_POINTS.group} pts</span></div>
         <div className="rules-divider"></div>
-        <div className="rules-row"><span>Any match &middot; exact score bonus</span><span className="pts">+1 pt</span></div>
+        <div className="rules-row"><span>Round of 32 &middot; correct result</span><span className="pts">{ROUND_POINTS.r32} pts</span></div>
         <div className="rules-divider"></div>
-        <div className="rules-row"><span>Round of 16 &middot; correct result</span><span className="pts">3 pts</span></div>
+        <div className="rules-row"><span>Round of 16 &middot; correct result</span><span className="pts">{ROUND_POINTS.r16} pts</span></div>
         <div className="rules-divider"></div>
-        <div className="rules-row"><span>Quarter-final &middot; correct result</span><span className="pts">4 pts</span></div>
+        <div className="rules-row"><span>Quarter-final &middot; correct result</span><span className="pts">{ROUND_POINTS.qf} pts</span></div>
         <div className="rules-divider"></div>
-        <div className="rules-row"><span>Semi-final &middot; correct result</span><span className="pts">6 pts</span></div>
+        <div className="rules-row"><span>Semi-final &middot; correct result</span><span className="pts">{ROUND_POINTS.sf} pts</span></div>
         <div className="rules-divider"></div>
-        <div className="rules-row"><span>Final &middot; correct result</span><span className="pts">8 pts</span></div>
+        <div className="rules-row"><span>Final &middot; correct result</span><span className="pts">{ROUND_POINTS.final} pts</span></div>
       </div>
 
-      <p className="section-label" style={{marginTop:'1.25rem'}}>Knockout matchups</p>
+      <p className="section-label" style={{marginTop:'1.25rem'}}>How fixtures work</p>
       <div className="card">
         <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>
-          Knockout fixtures (e.g. "1A vs 2B") use group winners/runners-up, which aren't known until group play finishes.
-          Pick those rounds once the bracket is set &mdash; placeholders will read like "W R16-1" until then.
+          Fixtures and results are pulled directly from ESPN. Group stage matches load first; knockout rounds
+          (Round of 32 onward) appear once ESPN publishes those matchups, which depends on final group standings.
+          Tap "Sync now" to refresh.
         </p>
       </div>
     </div>
   );
 }
 
-function MatchCard({ m, pick, onSetPick, onSetScore, locked }) {
-  const result = pick?.result;
+function MatchCard({ m, pick, onSetPick, locked }) {
   return (
     <div className={`match-card ${locked ? 'locked' : ''}`}>
-      <div className="match-meta">{m.pts} pts{!m.allowDraw ? ' \u00b7 knockout' : ''}</div>
+      <div className="match-meta">{m.pts} pts &middot; {ROUND_LABELS[m.round]}</div>
       <div className="match-teams">
         <div className="team-home">
-          <div className="team-flag">{m.hf}</div>
-          <div className="team-name">{m.h}</div>
+          <div className="team-flag">{m.home_flag}</div>
+          <div className="team-name">{m.home_team}</div>
         </div>
         <div className="match-sep">vs</div>
         <div className="team-away">
-          <div className="team-flag">{m.af}</div>
-          <div className="team-name">{m.a}</div>
+          <div className="team-flag">{m.away_flag}</div>
+          <div className="team-name">{m.away_team}</div>
         </div>
       </div>
       <div className="result-btns">
-        <button className={`result-btn ${result==='home'?'picked-home':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'home')}>{m.h.split(' ')[0]} win</button>
-        {m.allowDraw && <button className={`result-btn ${result==='draw'?'picked-draw':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'draw')}>Draw</button>}
-        <button className={`result-btn ${result==='away'?'picked-away':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'away')}>{m.a.split(' ')[0]} win</button>
+        <button className={`result-btn ${pick==='home'?'picked-home':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'home')}>{m.home_team.split(' ')[0]} win</button>
+        <button className={`result-btn ${pick==='draw'?'picked-draw':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'draw')}>Draw</button>
+        <button className={`result-btn ${pick==='away'?'picked-away':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'away')}>{m.away_team.split(' ')[0]} win</button>
       </div>
-      <div className="score-inputs">
-        <input type="number" min="0" max="20" placeholder="0" disabled={locked}
-          value={pick?.score_home ?? ''}
-          onChange={e => onSetScore(m.id, 'score_home', e.target.value)} />
-        <span className="score-sep">&ndash;</span>
-        <input type="number" min="0" max="20" placeholder="0" disabled={locked}
-          value={pick?.score_away ?? ''}
-          onChange={e => onSetScore(m.id, 'score_away', e.target.value)} />
-      </div>
-      <div className="score-hint">Optional: predicted score (+1 pt if exact)</div>
     </div>
   );
 }
 
-function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, locks }) {
+function groupMatchesByRound(matches) {
+  const byRound = {};
+  matches.forEach(m => {
+    if (!byRound[m.round]) byRound[m.round] = [];
+    byRound[m.round].push(m);
+  });
+  return byRound;
+}
+
+function PicksTab({ players, matches, picks, setPicks, savePicksForPlayer, showToast, locks }) {
   const [active, setActive] = useState(players[0] || null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -722,27 +659,22 @@ function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, loc
     return <div className="empty-state"><div className="icon">⚽</div>Add players in the Setup tab first.</div>;
   }
 
+  if (matches.length === 0) {
+    return <div className="empty-state"><div className="icon">⚽</div>No fixtures loaded yet. Go to Setup and tap "Sync now" to load matches from ESPN.</div>;
+  }
+
   const playerPicks = picks[active] || {};
-  const done = ALL_MATCH_IDS.filter(id => playerPicks[id]?.result).length;
-  const total = ALL_MATCH_IDS.length;
-  const pct = Math.round((done / total) * 100);
+  const total = matches.length;
+  const done = matches.filter(m => playerPicks[m.id]).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const groupLocked = !!locks?.group_locked;
   const koLocked = !!locks?.knockout_locked;
   const allLocked = groupLocked && koLocked;
 
-  const onSetPick = (matchId, result) => {
+  const onSetPick = (matchId, pick) => {
     setPicks(prev => {
       const playerMap = { ...(prev[active] || {}) };
-      playerMap[matchId] = { ...(playerMap[matchId] || {}), result };
-      return { ...prev, [active]: playerMap };
-    });
-    setSaved(false);
-  };
-
-  const onSetScore = (matchId, field, val) => {
-    setPicks(prev => {
-      const playerMap = { ...(prev[active] || {}) };
-      playerMap[matchId] = { ...(playerMap[matchId] || {}), [field]: val };
+      playerMap[matchId] = pick;
       return { ...prev, [active]: playerMap };
     });
     setSaved(false);
@@ -759,7 +691,10 @@ function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, loc
     }
   };
 
-  const groupEntries = Object.entries(GROUPS);
+  const byRound = groupMatchesByRound(matches);
+  const groupMatches = byRound.group || [];
+  const groupsPresent = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
+  const knockoutRounds = ROUND_ORDER.filter(r => r !== 'group' && byRound[r] && byRound[r].length > 0);
 
   return (
     <div>
@@ -786,93 +721,112 @@ function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, loc
         <span style={{fontSize:'12px', color:'var(--text-secondary)', whiteSpace:'nowrap'}}>{done}/{total} picked</span>
       </div>
 
-      <p className="section-label">Group stage</p>
-      {groupEntries.map(([g, ms]) => (
-        <div key={g}>
-          <div className="group-header"><span className="group-badge">Group {g}</span></div>
-          {ms.map((m, i) => {
-            const mid = `${g}_${i}`;
-            const match = ALL_MATCHES.find(x => x.id === mid);
-            return <MatchCard key={mid} m={match} pick={playerPicks[mid]} onSetPick={onSetPick} onSetScore={onSetScore} locked={groupLocked} />;
-          })}
-        </div>
-      ))}
+      {groupMatches.length > 0 && (
+        <>
+          <p className="section-label">Group stage</p>
+          {groupsPresent.map(g => (
+            <div key={g}>
+              <div className="group-header"><span className="group-badge">Group {g}</span></div>
+              {groupMatches.filter(m => m.group_name === g).map(m => (
+                <MatchCard key={m.id} m={m} pick={playerPicks[m.id]} onSetPick={onSetPick} locked={groupLocked} />
+              ))}
+            </div>
+          ))}
+          {groupMatches.some(m => !m.group_name) && (
+            <div>
+              <div className="group-header"><span className="group-badge">Other group matches</span></div>
+              {groupMatches.filter(m => !m.group_name).map(m => (
+                <MatchCard key={m.id} m={m} pick={playerPicks[m.id]} onSetPick={onSetPick} locked={groupLocked} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
-      {KO_ROUNDS.map(r => (
-        <div key={r.id}>
-          <div className="ko-round-label">{r.label}</div>
-          {r.matches.map(m => {
-            const match = ALL_MATCHES.find(x => x.id === m.id);
-            return <MatchCard key={m.id} m={match} pick={playerPicks[m.id]} onSetPick={onSetPick} onSetScore={onSetScore} locked={koLocked} />;
-          })}
-        </div>
-      ))}
+      {knockoutRounds.length > 0 && (
+        <>
+          <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
+          {knockoutRounds.map(r => (
+            <div key={r}>
+              <div className="ko-round-label">{ROUND_LABELS[r]}</div>
+              {byRound[r].map(m => (
+                <MatchCard key={m.id} m={m} pick={playerPicks[m.id]} onSetPick={onSetPick} locked={koLocked} />
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+
+      {knockoutRounds.length === 0 && (
+        <p style={{fontSize:'12px', color:'var(--text-tertiary)', marginTop:'1.5rem'}}>
+          Knockout stage matchups aren't available yet &mdash; they'll appear here once ESPN publishes the Round of 32 bracket.
+        </p>
+      )}
 
       <button className={`save-btn ${saved ? 'saved' : ''}`} onClick={onSave} disabled={saving || allLocked}>
-        {saving ? 'Saving...' : saved ? `\u2713 Saved` : allLocked ? 'Picks locked' : `Save ${active}'s picks`}
+        {saving ? 'Saving...' : saved ? `✓ Saved` : allLocked ? 'Picks locked' : `Save ${active}'s picks`}
       </button>
     </div>
   );
 }
 
-function ResultEntry({ m, result, onSave }) {
-  const [val, setVal] = useState(result?.result || '');
-  const [sh, setSh] = useState(result?.score_home ?? '');
-  const [sa, setSa] = useState(result?.score_away ?? '');
-
-  useEffect(() => {
-    setVal(result?.result || '');
-    setSh(result?.score_home ?? '');
-    setSa(result?.score_away ?? '');
-  }, [result]);
-
-  const commit = (newVal, newSh, newSa) => onSave(m.id, newVal, newSh, newSa);
-
+function ResultDisplay({ m }) {
+  const hasResult = !!m.result;
+  let resultLabel = 'No result yet';
+  if (hasResult) {
+    if (m.result === 'home') resultLabel = `${m.home_team} win`;
+    else if (m.result === 'away') resultLabel = `${m.away_team} win`;
+    else resultLabel = 'Draw';
+  }
   return (
     <div className="admin-card">
       <div className="result-row">
-        <span className="r-name">{m.hf} {m.h}</span>
+        <span className="r-name">{m.home_flag} {m.home_team}</span>
         <span className="r-vs">vs</span>
-        <span className="r-name">{m.af} {m.a}</span>
-        <select value={val} onChange={e => { setVal(e.target.value); commit(e.target.value, sh, sa); }}>
-          <option value="">no result</option>
-          <option value="home">{m.h} win</option>
-          {m.allowDraw && <option value="draw">Draw</option>}
-          <option value="away">{m.a} win</option>
-        </select>
+        <span className="r-name" style={{textAlign:'right'}}>{m.away_flag} {m.away_team}</span>
       </div>
-      <div className="score-inputs" style={{marginTop:'8px'}}>
-        <input type="number" min="0" max="20" placeholder="0" value={sh}
-          onChange={e => { setSh(e.target.value); }}
-          onBlur={() => commit(val, sh, sa)} />
-        <span className="score-sep">&ndash;</span>
-        <input type="number" min="0" max="20" placeholder="0" value={sa}
-          onChange={e => { setSa(e.target.value); }}
-          onBlur={() => commit(val, sh, sa)} />
-      </div>
+      <div className={`result-status ${hasResult ? 'has-result' : ''}`}>{resultLabel}</div>
     </div>
   );
 }
 
-function ResultsTab({ results, saveResult, showToast, onEspnSync, espnSyncing, espnLastSync, espnError }) {
-  const onSave = async (matchId, result, sh, sa) => {
-    const ok = await saveResult(matchId, result, sh, sa);
-    if (ok) showToast('Result saved');
-  };
-
+function ResultsTab({ matches, onEspnSync, espnSyncing, espnLastSync, espnError }) {
   const lastSyncLabel = espnLastSync
     ? espnLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
+  if (matches.length === 0) {
+    return (
+      <div>
+        <div className="card espn-sync-card">
+          <div>
+            <div className="lock-title">Live results from ESPN</div>
+            <div className="lock-sub">
+              {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : 'Not synced yet \u2014 tap Sync now'}
+            </div>
+          </div>
+          <button className="btn" onClick={onEspnSync} disabled={espnSyncing}>
+            {espnSyncing ? 'Syncing...' : 'Sync now'}
+          </button>
+        </div>
+        <div className="empty-state"><div className="icon">⚽</div>No fixtures loaded yet.</div>
+      </div>
+    );
+  }
+
+  const byRound = groupMatchesByRound(matches);
+  const groupMatches = byRound.group || [];
+  const groupsPresent = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
+  const knockoutRounds = ROUND_ORDER.filter(r => r !== 'group' && byRound[r] && byRound[r].length > 0);
+
   return (
     <div>
-      <p className="section-label">Enter actual match results</p>
+      <p className="section-label">Match results</p>
       <div className="card espn-sync-card">
         <div>
           <div className="lock-title">Live results from ESPN</div>
           <div className="lock-sub">
-            {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : lastSyncLabel ? `Last synced ${lastSyncLabel} \u00b7 auto-refreshes every minute` : 'Syncing...'}
+            {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : lastSyncLabel ? `Last synced ${lastSyncLabel}` : 'Tap Sync now to refresh'}
           </div>
         </div>
         <button className="btn" onClick={onEspnSync} disabled={espnSyncing}>
@@ -880,132 +834,122 @@ function ResultsTab({ results, saveResult, showToast, onEspnSync, espnSyncing, e
         </button>
       </div>
       <p style={{fontSize:'13px', color:'var(--text-secondary)', marginBottom:'1rem'}}>
-        Group stage results auto-sync from ESPN. You can still enter or correct results manually below &mdash; the leaderboard updates live for everyone.
+        Results sync directly from ESPN &mdash; tap "Sync now" to refresh. The leaderboard updates live for everyone once synced.
       </p>
 
-      <p className="section-label">Group stage</p>
-      {Object.entries(GROUPS).map(([g, ms]) => (
-        <div key={g}>
-          <div className="group-header"><span className="group-badge">Group {g}</span></div>
-          {ms.map((m, i) => {
-            const mid = `${g}_${i}`;
-            const match = ALL_MATCHES.find(x => x.id === mid);
-            return <ResultEntry key={mid} m={match} result={results[mid]} onSave={onSave} />;
-          })}
-        </div>
-      ))}
+      {groupMatches.length > 0 && (
+        <>
+          <p className="section-label">Group stage</p>
+          {groupsPresent.map(g => (
+            <div key={g}>
+              <div className="group-header"><span className="group-badge">Group {g}</span></div>
+              {groupMatches.filter(m => m.group_name === g).map(m => (
+                <ResultDisplay key={m.id} m={m} />
+              ))}
+            </div>
+          ))}
+          {groupMatches.some(m => !m.group_name) && (
+            <div>
+              <div className="group-header"><span className="group-badge">Other group matches</span></div>
+              {groupMatches.filter(m => !m.group_name).map(m => (
+                <ResultDisplay key={m.id} m={m} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
-      <p style={{fontSize:'12px', color:'var(--text-tertiary)', marginTop:'-0.5rem', marginBottom:'0.75rem'}}>
-        Knockout results aren't auto-synced (bracket teams aren't known until groups finish) &mdash; enter these manually.
-      </p>
-      {KO_ROUNDS.map(r => (
-        <div key={r.id}>
-          <div className="ko-round-label">{r.label}</div>
-          {r.matches.map(m => {
-            const match = ALL_MATCHES.find(x => x.id === m.id);
-            return <ResultEntry key={m.id} m={match} result={results[m.id]} onSave={onSave} />;
-          })}
-        </div>
-      ))}
+      {knockoutRounds.length > 0 && (
+        <>
+          <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
+          {knockoutRounds.map(r => (
+            <div key={r}>
+              <div className="ko-round-label">{ROUND_LABELS[r]}</div>
+              {byRound[r].map(m => (
+                <ResultDisplay key={m.id} m={m} />
+              ))}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
 
-function roundPts(mid) {
-  if (mid.startsWith('r16')) return 3;
-  if (mid.startsWith('qf')) return 4;
-  if (mid.startsWith('sf')) return 6;
-  if (mid.startsWith('final')) return 8;
-  return 2;
-}
-
-function calcPoints(playerPicks, results) {
-  let pts = 0, correct = 0, exact = 0;
-  Object.entries(results).forEach(([mid, actual]) => {
-    const pick = playerPicks[mid];
-    if (!pick || !pick.result) return;
-    const rp = roundPts(mid);
-    if (pick.result === actual.result) {
-      pts += rp;
+function calcPoints(playerPicks, matches) {
+  let pts = 0, correct = 0, total = 0;
+  matches.forEach(m => {
+    if (!m.result) return;
+    total++;
+    const pick = playerPicks[m.id];
+    if (pick && pick === m.result) {
+      pts += m.pts;
       correct++;
-      if (
-        pick.score_home !== null && pick.score_home !== undefined && pick.score_home !== '' &&
-        pick.score_away !== null && pick.score_away !== undefined && pick.score_away !== '' &&
-        actual.score_home !== null && actual.score_away !== null &&
-        Number(pick.score_home) === Number(actual.score_home) &&
-        Number(pick.score_away) === Number(actual.score_away)
-      ) {
-        pts += 1;
-        exact++;
-      }
     }
   });
-  return { pts, correct, exact };
+  return { pts, correct, total };
 }
 
-function LeaderboardTab({ players, picks, results }) {
+function LeaderboardTab({ players, matches, picks }) {
   if (players.length === 0) {
     return <div className="empty-state"><div className="icon">⚽</div>Add players in the Setup tab first.</div>;
   }
+  if (matches.length === 0) {
+    return <div className="empty-state"><div className="icon">⚽</div>No fixtures loaded yet &mdash; sync from ESPN in the Setup tab.</div>;
+  }
 
   const data = players
-    .map(p => ({ name: p, ...calcPoints(picks[p] || {}, results) }))
+    .map(p => ({ name: p, ...calcPoints(picks[p] || {}, matches) }))
     .sort((a, b) => b.pts - a.pts);
 
-  const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
-  const completedMatches = ALL_MATCHES.filter(m => results[m.id]);
+  const medals = ['🥇', '🥈', '🥉'];
+  const completedMatches = matches.filter(m => m.result);
 
   return (
     <div>
       <p className="section-label">Leaderboard &middot; {completedMatches.length} results in</p>
       <div className="card">
         <div className="lb-header">
-          <span>#</span><span>Player</span><span>Pts</span><span>Hits</span><span>Exact</span>
+          <span>#</span><span>Player</span><span>Pts</span><span>Hits</span>
         </div>
         {data.map((p, i) => (
           <div className="lb-row" key={p.name}>
             <div className={`lb-rank ${i < 3 ? 'top' : ''}`}>{medals[i] || i + 1}</div>
             <div className="lb-name">{p.name}</div>
             <div className="lb-pts">{p.pts}</div>
-            <div className="lb-sub">{p.correct}</div>
-            <div className="lb-sub">{p.exact}</div>
+            <div className="lb-sub">{p.correct}/{p.total}</div>
           </div>
         ))}
       </div>
       <div style={{display:'flex', gap:'16px', flexWrap:'wrap', fontSize:'12px', color:'var(--text-tertiary)', marginTop:'0.5rem', padding:'0 4px'}}>
-        <span>Pts = total points</span><span>Hits = correct results</span><span>Exact = exact scores</span>
+        <span>Pts = total points</span><span>Hits = correct / completed matches</span>
       </div>
 
       {completedMatches.length > 0 && (
         <>
           <p className="section-label" style={{marginTop:'1.5rem'}}>Pick breakdown</p>
-          {completedMatches.map(m => {
-            const actual = results[m.id];
-            return (
-              <div className="card" key={m.id} style={{padding:'0.75rem 1.25rem'}}>
-                <div style={{fontSize:'13px', fontWeight:600, marginBottom:'6px'}}>
-                  {m.hf} {m.h} vs {m.af} {m.a}
-                  <span style={{fontWeight:400, color:'var(--text-secondary)'}}>
-                    {' '}&rarr; {actual.result === 'home' ? `${m.h} win` : actual.result === 'away' ? `${m.a} win` : 'Draw'}
-                    {actual.score_home !== null && actual.score_away !== null ? ` (${actual.score_home}-${actual.score_away})` : ''}
-                  </span>
-                </div>
-                <div className="picks-summary">
-                  {players.map(p => {
-                    const pick = (picks[p] || {})[m.id];
-                    const correct = pick?.result === actual.result;
-                    const cls = pick?.result === 'home' ? 'home' : pick?.result === 'draw' ? 'draw' : pick?.result === 'away' ? 'away' : 'none';
-                    return (
-                      <span key={p} className={`pick-pill ${cls}`} title={`${p}: ${pick?.result || 'no pick'}`}>
-                        {p.split(' ')[0]} {correct ? '\u2713' : ''}{!pick?.result ? '\u2014' : ''}
-                      </span>
-                    );
-                  })}
-                </div>
+          {completedMatches.map(m => (
+            <div className="card" key={m.id} style={{padding:'0.75rem 1.25rem'}}>
+              <div style={{fontSize:'13px', fontWeight:600, marginBottom:'6px'}}>
+                {m.home_flag} {m.home_team} vs {m.away_flag} {m.away_team}
+                <span style={{fontWeight:400, color:'var(--text-secondary)'}}>
+                  {' '}&rarr; {m.result === 'home' ? `${m.home_team} win` : m.result === 'away' ? `${m.away_team} win` : 'Draw'}
+                </span>
               </div>
-            );
-          })}
+              <div className="picks-summary">
+                {players.map(p => {
+                  const pick = (picks[p] || {})[m.id];
+                  const correct = pick === m.result;
+                  const cls = pick === 'home' ? 'home' : pick === 'draw' ? 'draw' : pick === 'away' ? 'away' : 'none';
+                  return (
+                    <span key={p} className={`pick-pill ${cls}`} title={`${p}: ${pick || 'no pick'}`}>
+                      {p.split(' ')[0]} {correct ? '✓' : ''}{!pick ? '\u2014' : ''}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </>
       )}
     </div>
