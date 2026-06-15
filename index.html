@@ -161,6 +161,8 @@
   .btn-link { background: none; border: none; color: var(--text-tertiary); font-size: 12px; text-decoration: underline; padding: 0; cursor: pointer; }
   .btn-link:hover { color: var(--text-secondary); }
   .lock-banner { display: flex; align-items: center; gap: 10px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--amber); }
+  .espn-sync-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; }
+  .espn-sync-card .btn { white-space: nowrap; }
 
   .loading { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
   .spinner { width: 28px; height: 28px; border: 3px solid var(--border-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
@@ -180,6 +182,7 @@ const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_PASSWORD = "btb2026";
+const ESPN_PROXY_URL = "https://guitar-proxy.tight-meadow-3e46.workers.dev/wc2026";
 
 // ---- Tournament data ----
 const GROUPS = {
@@ -220,6 +223,82 @@ function allMatches() {
 }
 const ALL_MATCHES = allMatches();
 const ALL_MATCH_IDS = ALL_MATCHES.map(m => m.id);
+
+// ESPN sometimes uses different display names than ours - map ESPN name -> our name
+const ESPN_NAME_MAP = {
+  'South Korea': 'South Korea',
+  'Korea Republic': 'South Korea',
+  'USA': 'USA',
+  'United States': 'USA',
+  'IR Iran': 'Iran',
+  'Iran': 'Iran',
+  'Saudi Arabia': 'Saudi Arabia',
+  'KSA': 'Saudi Arabia',
+  'England': 'England',
+  'Cote d\'Ivoire': 'Ivory Coast'
+};
+
+function normalizeTeamName(espnName) {
+  if (!espnName) return espnName;
+  return ESPN_NAME_MAP[espnName] || espnName;
+}
+
+// Build a lookup of "TeamA|TeamB" (sorted) -> matchId for group stage matches
+function buildGroupMatchLookup() {
+  const lookup = {};
+  Object.entries(GROUPS).forEach(([g, ms]) => {
+    ms.forEach((m, i) => {
+      const key = [m.h, m.a].sort().join('|');
+      lookup[key] = `${g}_${i}`;
+    });
+  });
+  return lookup;
+}
+const GROUP_MATCH_LOOKUP = buildGroupMatchLookup();
+
+// Parse ESPN scoreboard response into { matchId: { result, score_home, score_away } } for completed matches
+function parseEspnResults(espnData) {
+  const out = {};
+  const events = espnData?.events || [];
+  events.forEach(ev => {
+    const comp = ev?.competitions?.[0];
+    if (!comp) return;
+    const completed = comp?.status?.type?.completed;
+    if (!completed) return;
+
+    const competitors = comp.competitors || [];
+    const home = competitors.find(c => c.homeAway === 'home');
+    const away = competitors.find(c => c.homeAway === 'away');
+    if (!home || !away) return;
+
+    const homeName = normalizeTeamName(home.team?.displayName || home.team?.name);
+    const awayName = normalizeTeamName(away.team?.displayName || away.team?.name);
+    const homeScore = home.score !== undefined ? Number(home.score) : null;
+    const awayScore = away.score !== undefined ? Number(away.score) : null;
+    if (homeScore === null || awayScore === null) return;
+
+    const key = [homeName, awayName].sort().join('|');
+    const matchId = GROUP_MATCH_LOOKUP[key];
+    if (!matchId) return; // not a group match we're tracking (or knockout - matched separately later)
+
+    // Figure out which of our h/a corresponds to ESPN's home/away to set result correctly
+    const match = ALL_MATCHES.find(m => m.id === matchId);
+    let ourHomeScore, ourAwayScore;
+    if (match.h === homeName) {
+      ourHomeScore = homeScore; ourAwayScore = awayScore;
+    } else {
+      ourHomeScore = awayScore; ourAwayScore = homeScore;
+    }
+
+    let result;
+    if (ourHomeScore > ourAwayScore) result = 'home';
+    else if (ourHomeScore < ourAwayScore) result = 'away';
+    else result = 'draw';
+
+    out[matchId] = { result, score_home: ourHomeScore, score_away: ourAwayScore };
+  });
+  return out;
+}
 
 function matchLabel(mid) {
   const m = ALL_MATCHES.find(x => x.id === mid);
@@ -394,6 +473,54 @@ function App() {
     showToast(value ? 'Locked' : 'Unlocked');
   };
 
+  // ---- ESPN sync ----
+  const [espnSyncing, setEspnSyncing] = useState(false);
+  const [espnLastSync, setEspnLastSync] = useState(null);
+  const [espnError, setEspnError] = useState(false);
+
+  const syncFromEspn = useCallback(async (silent) => {
+    setEspnSyncing(true);
+    try {
+      const resp = await fetch(ESPN_PROXY_URL);
+      if (!resp.ok) throw new Error('ESPN proxy error ' + resp.status);
+      const data = await resp.json();
+      const parsed = parseEspnResults(data);
+
+      const rows = Object.entries(parsed).map(([matchId, v]) => ({
+        match_id: matchId,
+        result: v.result,
+        score_home: v.score_home,
+        score_away: v.score_away
+      }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from('results').upsert(rows, { onConflict: 'match_id' });
+        if (error) throw error;
+        setResults(prev => {
+          const next = { ...prev };
+          rows.forEach(r => { next[r.match_id] = { result: r.result, score_home: r.score_home, score_away: r.score_away }; });
+          return next;
+        });
+      }
+      setEspnLastSync(new Date());
+      setEspnError(false);
+      if (!silent) showToast(rows.length > 0 ? `Synced ${rows.length} result${rows.length === 1 ? '' : 's'} from ESPN` : 'No new results from ESPN');
+    } catch (err) {
+      console.error('ESPN sync error', err);
+      setEspnError(true);
+      if (!silent) showToast('ESPN sync failed - check worker proxy');
+    } finally {
+      setEspnSyncing(false);
+    }
+  }, [showToast]);
+
+  // Auto-poll ESPN every 60s
+  useEffect(() => {
+    syncFromEspn(true);
+    const interval = setInterval(() => syncFromEspn(true), 60000);
+    return () => clearInterval(interval);
+  }, [syncFromEspn]);
+
   return (
     <div className="app">
       <Header players={players} resultsCount={resultsCount} syncOk={syncOk} onRefresh={refresh} refreshing={refreshing} />
@@ -404,7 +531,7 @@ function App() {
         <>
           {tab === 'setup' && <SetupTab players={players} addPlayer={addPlayer} removePlayer={removePlayer} locks={locks} isAdmin={isAdmin} setLock={setLock} adminLogin={adminLogin} adminLogout={adminLogout} />}
           {tab === 'picks' && <PicksTab players={players} picks={picks} setPicks={setPicks} savePicksForPlayer={savePicksForPlayer} showToast={showToast} locks={locks} />}
-          {tab === 'results' && <ResultsTab results={results} saveResult={saveResult} showToast={showToast} />}
+          {tab === 'results' && <ResultsTab results={results} saveResult={saveResult} showToast={showToast} onEspnSync={() => syncFromEspn(false)} espnSyncing={espnSyncing} espnLastSync={espnLastSync} espnError={espnError} />}
           {tab === 'leaderboard' && <LeaderboardTab players={players} picks={picks} results={results} />}
         </>
       )}
@@ -418,7 +545,7 @@ function Header({ players, resultsCount, syncOk, onRefresh, refreshing }) {
   return (
     <div className="header">
       <div className="header-left">
-        <span className="trophy">\u{1F3C6}</span>
+        <span className="trophy">🏆</span>
         <div>
           <h1>BTB WC 2026</h1>
           <div className="header-sub">{players.length} players &middot; {resultsCount} results entered</div>
@@ -430,7 +557,7 @@ function Header({ players, resultsCount, syncOk, onRefresh, refreshing }) {
           {syncOk ? 'Live' : 'Offline'}
         </div>
         <button className="refresh-btn" onClick={onRefresh} disabled={refreshing} title="Refresh data">
-          <span className={refreshing ? 'spin-icon' : ''}>\u21BB</span>
+          <span className={refreshing ? 'spin-icon' : ''}>↻</span>
         </button>
       </div>
     </div>
@@ -592,7 +719,7 @@ function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, loc
   }, [players, active]);
 
   if (players.length === 0) {
-    return <div className="empty-state"><div className="icon">\u26BD</div>Add players in the Setup tab first.</div>;
+    return <div className="empty-state"><div className="icon">⚽</div>Add players in the Setup tab first.</div>;
   }
 
   const playerPicks = picks[active] || {};
@@ -638,13 +765,13 @@ function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, loc
     <div>
       {groupLocked && (
         <div className="lock-banner">
-          <span>\u{1F512}</span>
+          <span>🔒</span>
           <span>Group stage picks are locked &mdash; the tournament has started for this stage.</span>
         </div>
       )}
       {koLocked && (
         <div className="lock-banner">
-          <span>\u{1F512}</span>
+          <span>🔒</span>
           <span>Knockout stage picks are locked.</span>
         </div>
       )}
@@ -728,17 +855,32 @@ function ResultEntry({ m, result, onSave }) {
   );
 }
 
-function ResultsTab({ results, saveResult, showToast }) {
+function ResultsTab({ results, saveResult, showToast, onEspnSync, espnSyncing, espnLastSync, espnError }) {
   const onSave = async (matchId, result, sh, sa) => {
     const ok = await saveResult(matchId, result, sh, sa);
     if (ok) showToast('Result saved');
   };
 
+  const lastSyncLabel = espnLastSync
+    ? espnLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
   return (
     <div>
       <p className="section-label">Enter actual match results</p>
+      <div className="card espn-sync-card">
+        <div>
+          <div className="lock-title">Live results from ESPN</div>
+          <div className="lock-sub">
+            {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : lastSyncLabel ? `Last synced ${lastSyncLabel} \u00b7 auto-refreshes every minute` : 'Syncing...'}
+          </div>
+        </div>
+        <button className="btn" onClick={onEspnSync} disabled={espnSyncing}>
+          {espnSyncing ? 'Syncing...' : 'Sync now'}
+        </button>
+      </div>
       <p style={{fontSize:'13px', color:'var(--text-secondary)', marginBottom:'1rem'}}>
-        Anyone can enter results as matches finish &mdash; the leaderboard updates live for everyone.
+        Group stage results auto-sync from ESPN. You can still enter or correct results manually below &mdash; the leaderboard updates live for everyone.
       </p>
 
       <p className="section-label">Group stage</p>
@@ -754,6 +896,9 @@ function ResultsTab({ results, saveResult, showToast }) {
       ))}
 
       <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
+      <p style={{fontSize:'12px', color:'var(--text-tertiary)', marginTop:'-0.5rem', marginBottom:'0.75rem'}}>
+        Knockout results aren't auto-synced (bracket teams aren't known until groups finish) &mdash; enter these manually.
+      </p>
       {KO_ROUNDS.map(r => (
         <div key={r.id}>
           <div className="ko-round-label">{r.label}</div>
@@ -801,7 +946,7 @@ function calcPoints(playerPicks, results) {
 
 function LeaderboardTab({ players, picks, results }) {
   if (players.length === 0) {
-    return <div className="empty-state"><div className="icon">\u26BD</div>Add players in the Setup tab first.</div>;
+    return <div className="empty-state"><div className="icon">⚽</div>Add players in the Setup tab first.</div>;
   }
 
   const data = players
