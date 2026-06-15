@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BTB WC 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface-2: #f0f0f0;
+    --border: #e0e0e0;
+    --border-light: #cccccc;
+    --text: #000000;
+    --text-secondary: #5e5e5e;
+    --text-tertiary: #8c8c8c;
+    --blue: #ec0016;
+    --blue-bg: #fde8ea;
+    --blue-text: #ec0016;
+    --green: #00a14b;
+    --green-bg: #e3f5ec;
+    --green-text: #00763a;
+    --amber: #d97706;
+    --amber-bg: #fdf1e0;
+    --red: #ec0016;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; }
+  .app { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .trophy { font-size: 26px; }
+  .header h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  .header-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .sync-badge { font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .sync-dot.err { background: var(--red); }
+  .refresh-btn { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-secondary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.15s; }
+  .refresh-btn:hover { color: var(--text); border-color: var(--text-tertiary); }
+  .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .spin-icon { display: inline-block; animation: spin 0.8s linear infinite; }
+
+  .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; background: var(--surface); border-radius: var(--radius-lg); padding: 4px; border: 1px solid var(--border); }
+  .nav-btn { flex: 1; padding: 9px 4px; border: none; background: transparent; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+  .nav-btn.active { background: var(--surface-2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .nav-btn:hover:not(.active) { color: var(--text); }
+
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 0.75rem; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 0.75rem; }
+
+  .player-setup { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .player-setup input { flex: 1; }
+  input, select, button { font-family: inherit; font-size: 14px; }
+  input[type="text"], input[type="number"], select {
+    background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+    color: var(--text); padding: 9px 12px; outline: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--blue); }
+  button { cursor: pointer; }
+  .btn { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: var(--text); padding: 9px 16px; font-weight: 500; transition: all 0.15s; }
+  .btn:hover { background: var(--border-light); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .player-chip { display: flex; align-items: center; justify-content: space-between; background: var(--surface-2); border-radius: var(--radius-md); padding: 9px 12px; font-size: 13px; border: 1px solid var(--border); }
+  .player-chip .remove { background: none; border: none; cursor: pointer; color: var(--text-tertiary); font-size: 18px; line-height: 1; padding: 0 2px; }
+  .player-chip .remove:hover { color: var(--red); }
+
+  .player-selector { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .player-btn { padding: 6px 14px; font-size: 13px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--surface); cursor: pointer; color: var(--text-secondary); transition: all 0.1s; }
+  .player-btn.selected { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); font-weight: 500; }
+  .player-btn:hover:not(.selected) { color: var(--text); border-color: var(--text-tertiary); }
+
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.25rem; margin-bottom: 0.5rem; }
+  .match-card.locked { opacity: 0.6; }
+  .match-meta { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; letter-spacing: 0.04em; }
+  .match-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .team-home { text-align: right; }
+  .team-away { text-align: left; }
+  .team-name { font-size: 14px; font-weight: 500; }
+  .team-flag { font-size: 20px; }
+  .match-sep { font-size: 12px; color: var(--text-tertiary); text-align: center; }
+  .result-btns { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+  .result-btn { padding: 6px 14px; font-size: 12px; border: 1px solid var(--border-light); border-radius: 20px; background: var(--surface-2); cursor: pointer; color: var(--text-secondary); transition: all 0.1s; font-weight: 500; }
+  .result-btn:hover { color: var(--text); border-color: var(--text-tertiary); }
+  .result-btn.picked-home { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
+  .result-btn.picked-draw { background: var(--border-light); color: var(--text); border-color: var(--text-tertiary); }
+  .result-btn.picked-away { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
+  .result-btn:disabled, .score-inputs input:disabled { cursor: not-allowed; opacity: 0.7; }
+  .score-inputs { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
+  .score-inputs input { width: 48px; text-align: center; padding: 5px 0; font-size: 14px; font-weight: 600; }
+  .score-inputs .score-sep { font-size: 13px; color: var(--text-tertiary); }
+  .score-hint { font-size: 11px; color: var(--text-tertiary); text-align: center; margin-top: 4px; }
+
+  .group-header { display: flex; align-items: center; gap: 8px; margin: 1.25rem 0 0.5rem; }
+  .group-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; background: var(--surface-2); border-radius: 20px; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
+
+  .progress-bar { height: 4px; background: var(--surface-2); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; flex: 1; }
+  .progress-fill { height: 100%; border-radius: 2px; background: var(--blue); transition: width 0.3s; }
+
+  .save-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; margin-top: 1rem; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: var(--radius-lg); cursor: pointer; color: var(--blue-text); transition: all 0.15s; }
+  .save-btn:hover { background: #1c3157; }
+  .save-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green-text); }
+  .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .lb-row { display: grid; grid-template-columns: 28px 1fr 48px 48px 48px; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-size: 13px; color: var(--text-tertiary); text-align: center; }
+  .lb-rank.top { font-weight: 700; color: var(--text); }
+  .lb-name { font-weight: 500; }
+  .lb-pts { text-align: center; font-weight: 700; font-size: 16px; }
+  .lb-sub { text-align: center; font-size: 12px; color: var(--text-tertiary); }
+  .lb-header { display: grid; grid-template-columns: 28px 1fr 48px 48px 48px; gap: 8px; padding: 0 0 10px; border-bottom: 1px solid var(--border-light); }
+  .lb-header span { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
+  .lb-header span:nth-child(2) { text-align: left; }
+
+  .admin-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 0.6rem; }
+  .result-row { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+  .result-row .r-name { font-weight: 500; font-size: 13px; }
+  .result-row .r-vs { color: var(--text-tertiary); font-size: 12px; }
+  .result-row select { font-size: 12px; padding: 5px 8px; }
+
+  .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); font-size: 14px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 0.75rem; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); border: 1px solid var(--border-light); color: var(--surface); padding: 10px 22px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  .picks-summary { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .pick-pill { font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 500; }
+  .pick-pill.home { background: var(--blue-bg); color: var(--blue-text); }
+  .pick-pill.draw { background: var(--border-light); color: var(--text-secondary); }
+  .pick-pill.away { background: var(--green-bg); color: var(--green-text); }
+  .pick-pill.none { background: var(--surface-2); color: var(--text-tertiary); opacity: 0.6; }
+
+  .ko-round-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin: 1.1rem 0 0.5rem; }
+
+  .rules-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; }
+  .rules-row .pts { font-weight: 600; color: var(--blue-text); }
+  .rules-divider { height: 1px; background: var(--border); }
+  .lock-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; gap: 12px; }
+  .lock-title { font-size: 13px; font-weight: 500; }
+  .lock-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .lock-pill { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  .lock-pill.locked { background: var(--amber-bg); color: var(--amber); }
+  .lock-pill.open { background: var(--green-bg); color: var(--green-text); }
+  .admin-controls { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .admin-controls-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 0.6rem; }
+  .admin-btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .admin-btn-row .btn { flex: 1; min-width: 140px; }
+  .btn-link { background: none; border: none; color: var(--text-tertiary); font-size: 12px; text-decoration: underline; padding: 0; cursor: pointer; }
+  .btn-link:hover { color: var(--text-secondary); }
+  .lock-banner { display: flex; align-items: center; gap: 10px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--amber); }
+
+  .loading { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .footer-note { text-align: center; font-size: 12px; color: var(--text-tertiary); margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react,env">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ---- Supabase config ----
+const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ADMIN_PASSWORD = "btb2026";
+
+// ---- Tournament data ----
+const GROUPS = {
+  A: [{h:'USA',hf:'\u{1F1FA}\u{1F1F8}',a:'Mexico',af:'\u{1F1F2}\u{1F1FD}'},{h:'Canada',hf:'\u{1F1E8}\u{1F1E6}',a:'Uruguay',af:'\u{1F1FA}\u{1F1FE}'}],
+  B: [{h:'Argentina',hf:'\u{1F1E6}\u{1F1F7}',a:'Ecuador',af:'\u{1F1EA}\u{1F1E8}'},{h:'Chile',hf:'\u{1F1E8}\u{1F1F1}',a:'Peru',af:'\u{1F1F5}\u{1F1EA}'}],
+  C: [{h:'Brazil',hf:'\u{1F1E7}\u{1F1F7}',a:'Colombia',af:'\u{1F1E8}\u{1F1F4}'},{h:'Paraguay',hf:'\u{1F1F5}\u{1F1FE}',a:'Venezuela',af:'\u{1F1FB}\u{1F1EA}'}],
+  D: [{h:'England',hf:'\u{1F3F4}',a:'France',af:'\u{1F1EB}\u{1F1F7}'},{h:'Germany',hf:'\u{1F1E9}\u{1F1EA}',a:'Netherlands',af:'\u{1F1F3}\u{1F1F1}'}],
+  E: [{h:'Spain',hf:'\u{1F1EA}\u{1F1F8}',a:'Portugal',af:'\u{1F1F5}\u{1F1F9}'},{h:'Belgium',hf:'\u{1F1E7}\u{1F1EA}',a:'Croatia',af:'\u{1F1ED}\u{1F1F7}'}],
+  F: [{h:'Morocco',hf:'\u{1F1F2}\u{1F1E6}',a:'Senegal',af:'\u{1F1F8}\u{1F1F3}'},{h:'Egypt',hf:'\u{1F1EA}\u{1F1EC}',a:'Cameroon',af:'\u{1F1E8}\u{1F1F2}'}],
+  G: [{h:'Japan',hf:'\u{1F1EF}\u{1F1F5}',a:'South Korea',af:'\u{1F1F0}\u{1F1F7}'},{h:'Australia',hf:'\u{1F1E6}\u{1F1FA}',a:'Saudi Arabia',af:'\u{1F1F8}\u{1F1E6}'}],
+  H: [{h:'Iran',hf:'\u{1F1EE}\u{1F1F7}',a:'Qatar',af:'\u{1F1F6}\u{1F1E6}'},{h:'Nigeria',hf:'\u{1F1F3}\u{1F1EC}',a:'Ghana',af:'\u{1F1EC}\u{1F1ED}'}]
+};
+
+const KO_ROUNDS = [
+  { id: 'r16', label: 'Round of 16', pts: 3, matches: [
+    {id:'r16_1',h:'1A',a:'2B'},{id:'r16_2',h:'1B',a:'2A'},
+    {id:'r16_3',h:'1C',a:'2D'},{id:'r16_4',h:'1D',a:'2C'},
+    {id:'r16_5',h:'1E',a:'2F'},{id:'r16_6',h:'1F',a:'2E'},
+    {id:'r16_7',h:'1G',a:'2H'},{id:'r16_8',h:'1H',a:'2G'}
+  ]},
+  { id: 'qf', label: 'Quarter-finals', pts: 4, matches: [
+    {id:'qf_1',h:'W R16-1',a:'W R16-2'},{id:'qf_2',h:'W R16-3',a:'W R16-4'},
+    {id:'qf_3',h:'W R16-5',a:'W R16-6'},{id:'qf_4',h:'W R16-7',a:'W R16-8'}
+  ]},
+  { id: 'sf', label: 'Semi-finals', pts: 6, matches: [
+    {id:'sf_1',h:'W QF-1',a:'W QF-2'},{id:'sf_2',h:'W QF-3',a:'W QF-4'}
+  ]},
+  { id: 'final', label: 'Final', pts: 8, matches: [
+    {id:'final_1',h:'W SF-1',a:'W SF-2'}
+  ]}
+];
+
+function allMatches() {
+  const list = [];
+  Object.entries(GROUPS).forEach(([g, ms]) => ms.forEach((m,i) => list.push({ id: `${g}_${i}`, h: m.h, hf: m.hf, a: m.a, af: m.af, pts: 2, allowDraw: true, label: `Group ${g}` })));
+  KO_ROUNDS.forEach(r => r.matches.forEach(m => list.push({ id: m.id, h: m.h, hf: '\u{1F30D}', a: m.a, af: '\u{1F30D}', pts: r.pts, allowDraw: false, label: r.label })));
+  return list;
+}
+const ALL_MATCHES = allMatches();
+const ALL_MATCH_IDS = ALL_MATCHES.map(m => m.id);
+
+function matchLabel(mid) {
+  const m = ALL_MATCHES.find(x => x.id === mid);
+  if (!m) return mid;
+  return `${m.hf} ${m.h} vs ${m.af} ${m.a}`;
+}
+
+// ---- Toast ----
+function useToast() {
+  const [msg, setMsg] = useState(null);
+  const show = useCallback((m) => {
+    setMsg(m);
+    setTimeout(() => setMsg(null), 2200);
+  }, []);
+  return [msg, show];
+}
+
+// ---- Main App ----
+function App() {
+  const [tab, setTab] = useState('setup');
+  const [players, setPlayers] = useState([]);
+  const [picks, setPicks] = useState({}); // { playerName: { matchId: { result, score_home, score_away } } }
+  const [results, setResults] = useState({}); // { matchId: { result, score_home, score_away } }
+  const [loading, setLoading] = useState(true);
+  const [syncOk, setSyncOk] = useState(true);
+  const [locks, setLocks] = useState({ group_locked: false, knockout_locked: false });
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('wc2026_admin') === 'true');
+  const [toast, showToast] = useToast();
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [{ data: pl, error: e1 }, { data: pk, error: e2 }, { data: rs, error: e3 }, { data: st, error: e4 }] = await Promise.all([
+        supabase.from('players').select('*').order('created_at', { ascending: true }),
+        supabase.from('picks').select('*'),
+        supabase.from('results').select('*'),
+        supabase.from('tournament_status').select('*').eq('id', 1).maybeSingle()
+      ]);
+      if (e1 || e2 || e3) throw (e1 || e2 || e3);
+      if (e4) console.error('Status load error', e4);
+
+      setPlayers((pl || []).map(p => p.name));
+
+      const picksByPlayer = {};
+      (pk || []).forEach(row => {
+        if (!picksByPlayer[row.player_name]) picksByPlayer[row.player_name] = {};
+        picksByPlayer[row.player_name][row.match_id] = {
+          result: row.result,
+          score_home: row.score_home,
+          score_away: row.score_away
+        };
+      });
+      setPicks(picksByPlayer);
+
+      const resultsByMatch = {};
+      (rs || []).forEach(row => {
+        resultsByMatch[row.match_id] = {
+          result: row.result,
+          score_home: row.score_home,
+          score_away: row.score_away
+        };
+      });
+      setResults(resultsByMatch);
+      if (st) setLocks({ group_locked: !!st.group_locked, knockout_locked: !!st.knockout_locked });
+      setSyncOk(true);
+    } catch (err) {
+      console.error('Load error', err);
+      setSyncOk(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Realtime subscriptions
+  useEffect(() => {
+    const channel = supabase.channel('wc2026-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_status' }, loadAll)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadAll]);
+
+  const addPlayer = async (name) => {
+    name = name.trim();
+    if (!name) { showToast('Enter a name'); return; }
+    if (players.includes(name)) { showToast('Name already added'); return; }
+    const { error } = await supabase.from('players').insert({ name });
+    if (error) { showToast('Could not add player'); console.error(error); return; }
+    setPlayers(prev => [...prev, name]);
+    showToast(`${name} added`);
+  };
+
+  const removePlayer = async (name) => {
+    const { error } = await supabase.from('players').delete().eq('name', name);
+    if (error) { showToast('Could not remove player'); console.error(error); return; }
+    await supabase.from('picks').delete().eq('player_name', name);
+    setPlayers(prev => prev.filter(p => p !== name));
+    setPicks(prev => { const c = { ...prev }; delete c[name]; return c; });
+    showToast(`${name} removed`);
+  };
+
+  const savePicksForPlayer = async (playerName, playerPicks) => {
+    const rows = Object.entries(playerPicks)
+      .filter(([, v]) => v && v.result)
+      .map(([matchId, v]) => ({
+        player_name: playerName,
+        match_id: matchId,
+        result: v.result,
+        score_home: v.score_home === '' || v.score_home === undefined ? null : Number(v.score_home),
+        score_away: v.score_away === '' || v.score_away === undefined ? null : Number(v.score_away)
+      }));
+    if (rows.length === 0) { showToast('No picks to save'); return false; }
+    const { error } = await supabase.from('picks').upsert(rows, { onConflict: 'player_name,match_id' });
+    if (error) { showToast('Save failed - check connection'); console.error(error); return false; }
+    return true;
+  };
+
+  const saveResult = async (matchId, result, scoreHome, scoreAway) => {
+    if (!result) {
+      const { error } = await supabase.from('results').delete().eq('match_id', matchId);
+      if (error) { console.error(error); return false; }
+      setResults(prev => { const c = { ...prev }; delete c[matchId]; return c; });
+      return true;
+    }
+    const row = {
+      match_id: matchId,
+      result,
+      score_home: scoreHome === '' || scoreHome === undefined ? null : Number(scoreHome),
+      score_away: scoreAway === '' || scoreAway === undefined ? null : Number(scoreAway)
+    };
+    const { error } = await supabase.from('results').upsert(row, { onConflict: 'match_id' });
+    if (error) { showToast('Save failed'); console.error(error); return false; }
+    setResults(prev => ({ ...prev, [matchId]: { result, score_home: row.score_home, score_away: row.score_away } }));
+    return true;
+  };
+
+  const resultsCount = Object.keys(results).length;
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAll();
+    setRefreshing(false);
+    showToast('Refreshed');
+  }, [loadAll, showToast]);
+
+  const adminLogin = (password) => {
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('wc2026_admin', 'true');
+      setIsAdmin(true);
+      showToast('Admin unlocked');
+      return true;
+    }
+    showToast('Incorrect password');
+    return false;
+  };
+
+  const adminLogout = () => {
+    sessionStorage.removeItem('wc2026_admin');
+    setIsAdmin(false);
+    showToast('Logged out of admin');
+  };
+
+  const setLock = async (field, value) => {
+    const { error } = await supabase.from('tournament_status')
+      .upsert({ id: 1, [field]: value }, { onConflict: 'id' });
+    if (error) { showToast('Could not update lock'); console.error(error); return; }
+    setLocks(prev => ({ ...prev, [field]: value }));
+    showToast(value ? 'Locked' : 'Unlocked');
+  };
+
+  return (
+    <div className="app">
+      <Header players={players} resultsCount={resultsCount} syncOk={syncOk} onRefresh={refresh} refreshing={refreshing} />
+      <Nav tab={tab} setTab={setTab} />
+      {loading ? (
+        <div className="loading"><div className="spinner"></div>Loading tournament data...</div>
+      ) : (
+        <>
+          {tab === 'setup' && <SetupTab players={players} addPlayer={addPlayer} removePlayer={removePlayer} locks={locks} isAdmin={isAdmin} setLock={setLock} adminLogin={adminLogin} adminLogout={adminLogout} />}
+          {tab === 'picks' && <PicksTab players={players} picks={picks} setPicks={setPicks} savePicksForPlayer={savePicksForPlayer} showToast={showToast} locks={locks} />}
+          {tab === 'results' && <ResultsTab results={results} saveResult={saveResult} showToast={showToast} />}
+          {tab === 'leaderboard' && <LeaderboardTab players={players} picks={picks} results={results} />}
+        </>
+      )}
+      <div className="footer-note">BTB World Cup 2026 Fantasy Challenge &middot; shared live via Supabase</div>
+      <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
+    </div>
+  );
+}
+
+function Header({ players, resultsCount, syncOk, onRefresh, refreshing }) {
+  return (
+    <div className="header">
+      <div className="header-left">
+        <span className="trophy">\u{1F3C6}</span>
+        <div>
+          <h1>BTB WC 2026</h1>
+          <div className="header-sub">{players.length} players &middot; {resultsCount} results entered</div>
+        </div>
+      </div>
+      <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+        <div className="sync-badge">
+          <span className={`sync-dot ${syncOk ? '' : 'err'}`}></span>
+          {syncOk ? 'Live' : 'Offline'}
+        </div>
+        <button className="refresh-btn" onClick={onRefresh} disabled={refreshing} title="Refresh data">
+          <span className={refreshing ? 'spin-icon' : ''}>\u21BB</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Nav({ tab, setTab }) {
+  const tabs = [['setup','Setup'],['picks','Picks'],['results','Results'],['leaderboard','Standings']];
+  return (
+    <div className="nav">
+      {tabs.map(([id, label]) => (
+        <button key={id} className={`nav-btn ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{label}</button>
+      ))}
+    </div>
+  );
+}
+
+function SetupTab({ players, addPlayer, removePlayer, locks, isAdmin, setLock, adminLogin, adminLogout }) {
+  const [name, setName] = useState('');
+  const [pw, setPw] = useState('');
+  const submit = () => { addPlayer(name); setName(''); };
+  const submitAdmin = () => { if (adminLogin(pw)) setPw(''); };
+  return (
+    <div>
+      <p className="section-label">Players</p>
+      <div className="card">
+        <div className="player-setup">
+          <input type="text" placeholder="Enter player name" value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
+          <button className="btn" onClick={submit}>Add</button>
+        </div>
+        {players.length === 0 ? (
+          <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>Anyone with this link can add themselves and pick &mdash; no player limit.</p>
+        ) : (
+          <div className="player-list">
+            {players.map(p => (
+              <div className="player-chip" key={p}>
+                <span>{p}</span>
+                <button className="remove" onClick={() => removePlayer(p)} title="Remove">&times;</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="section-label" style={{marginTop:'1.25rem'}}>Tournament status</p>
+      <div className="card">
+        <div className="lock-row">
+          <div>
+            <div className="lock-title">Group stage picks</div>
+            <div className="lock-sub">{locks.group_locked ? 'Locked \u2014 picks are read-only' : 'Open \u2014 players can edit picks'}</div>
+          </div>
+          <span className={`lock-pill ${locks.group_locked ? 'locked' : 'open'}`}>{locks.group_locked ? 'Locked' : 'Open'}</span>
+        </div>
+        <div className="rules-divider"></div>
+        <div className="lock-row">
+          <div>
+            <div className="lock-title">Knockout stage picks</div>
+            <div className="lock-sub">{locks.knockout_locked ? 'Locked \u2014 picks are read-only' : 'Open \u2014 players can edit picks'}</div>
+          </div>
+          <span className={`lock-pill ${locks.knockout_locked ? 'locked' : 'open'}`}>{locks.knockout_locked ? 'Locked' : 'Open'}</span>
+        </div>
+
+        {isAdmin ? (
+          <div className="admin-controls">
+            <div className="admin-controls-label">Admin controls</div>
+            <div className="admin-btn-row">
+              <button className="btn" onClick={() => setLock('group_locked', !locks.group_locked)}>
+                {locks.group_locked ? 'Unlock group stage' : 'Lock group stage'}
+              </button>
+              <button className="btn" onClick={() => setLock('knockout_locked', !locks.knockout_locked)}>
+                {locks.knockout_locked ? 'Unlock knockout stage' : 'Lock knockout stage'}
+              </button>
+            </div>
+            <button className="btn-link" onClick={adminLogout}>Log out of admin</button>
+          </div>
+        ) : (
+          <div className="admin-controls">
+            <div className="admin-controls-label">Admin login</div>
+            <div className="player-setup">
+              <input type="password" placeholder="Admin password" value={pw}
+                onChange={e => setPw(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') submitAdmin(); }} />
+              <button className="btn" onClick={submitAdmin}>Unlock</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="section-label" style={{marginTop:'1.25rem'}}>Scoring rules</p>
+      <div className="card">
+        <div className="rules-row"><span>Group stage &middot; correct result</span><span className="pts">2 pts</span></div>
+        <div className="rules-divider"></div>
+        <div className="rules-row"><span>Any match &middot; exact score bonus</span><span className="pts">+1 pt</span></div>
+        <div className="rules-divider"></div>
+        <div className="rules-row"><span>Round of 16 &middot; correct result</span><span className="pts">3 pts</span></div>
+        <div className="rules-divider"></div>
+        <div className="rules-row"><span>Quarter-final &middot; correct result</span><span className="pts">4 pts</span></div>
+        <div className="rules-divider"></div>
+        <div className="rules-row"><span>Semi-final &middot; correct result</span><span className="pts">6 pts</span></div>
+        <div className="rules-divider"></div>
+        <div className="rules-row"><span>Final &middot; correct result</span><span className="pts">8 pts</span></div>
+      </div>
+
+      <p className="section-label" style={{marginTop:'1.25rem'}}>Knockout matchups</p>
+      <div className="card">
+        <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>
+          Knockout fixtures (e.g. "1A vs 2B") use group winners/runners-up, which aren't known until group play finishes.
+          Pick those rounds once the bracket is set &mdash; placeholders will read like "W R16-1" until then.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MatchCard({ m, pick, onSetPick, onSetScore, locked }) {
+  const result = pick?.result;
+  return (
+    <div className={`match-card ${locked ? 'locked' : ''}`}>
+      <div className="match-meta">{m.pts} pts{!m.allowDraw ? ' \u00b7 knockout' : ''}</div>
+      <div className="match-teams">
+        <div className="team-home">
+          <div className="team-flag">{m.hf}</div>
+          <div className="team-name">{m.h}</div>
+        </div>
+        <div className="match-sep">vs</div>
+        <div className="team-away">
+          <div className="team-flag">{m.af}</div>
+          <div className="team-name">{m.a}</div>
+        </div>
+      </div>
+      <div className="result-btns">
+        <button className={`result-btn ${result==='home'?'picked-home':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'home')}>{m.h.split(' ')[0]} win</button>
+        {m.allowDraw && <button className={`result-btn ${result==='draw'?'picked-draw':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'draw')}>Draw</button>}
+        <button className={`result-btn ${result==='away'?'picked-away':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'away')}>{m.a.split(' ')[0]} win</button>
+      </div>
+      <div className="score-inputs">
+        <input type="number" min="0" max="20" placeholder="0" disabled={locked}
+          value={pick?.score_home ?? ''}
+          onChange={e => onSetScore(m.id, 'score_home', e.target.value)} />
+        <span className="score-sep">&ndash;</span>
+        <input type="number" min="0" max="20" placeholder="0" disabled={locked}
+          value={pick?.score_away ?? ''}
+          onChange={e => onSetScore(m.id, 'score_away', e.target.value)} />
+      </div>
+      <div className="score-hint">Optional: predicted score (+1 pt if exact)</div>
+    </div>
+  );
+}
+
+function PicksTab({ players, picks, setPicks, savePicksForPlayer, showToast, locks }) {
+  const [active, setActive] = useState(players[0] || null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!active || !players.includes(active)) setActive(players[0] || null);
+  }, [players, active]);
+
+  if (players.length === 0) {
+    return <div className="empty-state"><div className="icon">\u26BD</div>Add players in the Setup tab first.</div>;
+  }
+
+  const playerPicks = picks[active] || {};
+  const done = ALL_MATCH_IDS.filter(id => playerPicks[id]?.result).length;
+  const total = ALL_MATCH_IDS.length;
+  const pct = Math.round((done / total) * 100);
+  const groupLocked = !!locks?.group_locked;
+  const koLocked = !!locks?.knockout_locked;
+  const allLocked = groupLocked && koLocked;
+
+  const onSetPick = (matchId, result) => {
+    setPicks(prev => {
+      const playerMap = { ...(prev[active] || {}) };
+      playerMap[matchId] = { ...(playerMap[matchId] || {}), result };
+      return { ...prev, [active]: playerMap };
+    });
+    setSaved(false);
+  };
+
+  const onSetScore = (matchId, field, val) => {
+    setPicks(prev => {
+      const playerMap = { ...(prev[active] || {}) };
+      playerMap[matchId] = { ...(playerMap[matchId] || {}), [field]: val };
+      return { ...prev, [active]: playerMap };
+    });
+    setSaved(false);
+  };
+
+  const onSave = async () => {
+    setSaving(true);
+    const ok = await savePicksForPlayer(active, picks[active] || {});
+    setSaving(false);
+    if (ok) {
+      setSaved(true);
+      showToast(`${active}'s picks saved`);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  };
+
+  const groupEntries = Object.entries(GROUPS);
+
+  return (
+    <div>
+      {groupLocked && (
+        <div className="lock-banner">
+          <span>\u{1F512}</span>
+          <span>Group stage picks are locked &mdash; the tournament has started for this stage.</span>
+        </div>
+      )}
+      {koLocked && (
+        <div className="lock-banner">
+          <span>\u{1F512}</span>
+          <span>Knockout stage picks are locked.</span>
+        </div>
+      )}
+      <p className="section-label">Picking for</p>
+      <div className="player-selector">
+        {players.map(p => (
+          <button key={p} className={`player-btn ${p === active ? 'selected' : ''}`} onClick={() => setActive(p)}>{p}</button>
+        ))}
+      </div>
+      <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'1.25rem'}}>
+        <div className="progress-bar"><div className="progress-fill" style={{width: `${pct}%`}}></div></div>
+        <span style={{fontSize:'12px', color:'var(--text-secondary)', whiteSpace:'nowrap'}}>{done}/{total} picked</span>
+      </div>
+
+      <p className="section-label">Group stage</p>
+      {groupEntries.map(([g, ms]) => (
+        <div key={g}>
+          <div className="group-header"><span className="group-badge">Group {g}</span></div>
+          {ms.map((m, i) => {
+            const mid = `${g}_${i}`;
+            const match = ALL_MATCHES.find(x => x.id === mid);
+            return <MatchCard key={mid} m={match} pick={playerPicks[mid]} onSetPick={onSetPick} onSetScore={onSetScore} locked={groupLocked} />;
+          })}
+        </div>
+      ))}
+
+      <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
+      {KO_ROUNDS.map(r => (
+        <div key={r.id}>
+          <div className="ko-round-label">{r.label}</div>
+          {r.matches.map(m => {
+            const match = ALL_MATCHES.find(x => x.id === m.id);
+            return <MatchCard key={m.id} m={match} pick={playerPicks[m.id]} onSetPick={onSetPick} onSetScore={onSetScore} locked={koLocked} />;
+          })}
+        </div>
+      ))}
+
+      <button className={`save-btn ${saved ? 'saved' : ''}`} onClick={onSave} disabled={saving || allLocked}>
+        {saving ? 'Saving...' : saved ? `\u2713 Saved` : allLocked ? 'Picks locked' : `Save ${active}'s picks`}
+      </button>
+    </div>
+  );
+}
+
+function ResultEntry({ m, result, onSave }) {
+  const [val, setVal] = useState(result?.result || '');
+  const [sh, setSh] = useState(result?.score_home ?? '');
+  const [sa, setSa] = useState(result?.score_away ?? '');
+
+  useEffect(() => {
+    setVal(result?.result || '');
+    setSh(result?.score_home ?? '');
+    setSa(result?.score_away ?? '');
+  }, [result]);
+
+  const commit = (newVal, newSh, newSa) => onSave(m.id, newVal, newSh, newSa);
+
+  return (
+    <div className="admin-card">
+      <div className="result-row">
+        <span className="r-name">{m.hf} {m.h}</span>
+        <span className="r-vs">vs</span>
+        <span className="r-name">{m.af} {m.a}</span>
+        <select value={val} onChange={e => { setVal(e.target.value); commit(e.target.value, sh, sa); }}>
+          <option value="">no result</option>
+          <option value="home">{m.h} win</option>
+          {m.allowDraw && <option value="draw">Draw</option>}
+          <option value="away">{m.a} win</option>
+        </select>
+      </div>
+      <div className="score-inputs" style={{marginTop:'8px'}}>
+        <input type="number" min="0" max="20" placeholder="0" value={sh}
+          onChange={e => { setSh(e.target.value); }}
+          onBlur={() => commit(val, sh, sa)} />
+        <span className="score-sep">&ndash;</span>
+        <input type="number" min="0" max="20" placeholder="0" value={sa}
+          onChange={e => { setSa(e.target.value); }}
+          onBlur={() => commit(val, sh, sa)} />
+      </div>
+    </div>
+  );
+}
+
+function ResultsTab({ results, saveResult, showToast }) {
+  const onSave = async (matchId, result, sh, sa) => {
+    const ok = await saveResult(matchId, result, sh, sa);
+    if (ok) showToast('Result saved');
+  };
+
+  return (
+    <div>
+      <p className="section-label">Enter actual match results</p>
+      <p style={{fontSize:'13px', color:'var(--text-secondary)', marginBottom:'1rem'}}>
+        Anyone can enter results as matches finish &mdash; the leaderboard updates live for everyone.
+      </p>
+
+      <p className="section-label">Group stage</p>
+      {Object.entries(GROUPS).map(([g, ms]) => (
+        <div key={g}>
+          <div className="group-header"><span className="group-badge">Group {g}</span></div>
+          {ms.map((m, i) => {
+            const mid = `${g}_${i}`;
+            const match = ALL_MATCHES.find(x => x.id === mid);
+            return <ResultEntry key={mid} m={match} result={results[mid]} onSave={onSave} />;
+          })}
+        </div>
+      ))}
+
+      <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
+      {KO_ROUNDS.map(r => (
+        <div key={r.id}>
+          <div className="ko-round-label">{r.label}</div>
+          {r.matches.map(m => {
+            const match = ALL_MATCHES.find(x => x.id === m.id);
+            return <ResultEntry key={m.id} m={match} result={results[m.id]} onSave={onSave} />;
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function roundPts(mid) {
+  if (mid.startsWith('r16')) return 3;
+  if (mid.startsWith('qf')) return 4;
+  if (mid.startsWith('sf')) return 6;
+  if (mid.startsWith('final')) return 8;
+  return 2;
+}
+
+function calcPoints(playerPicks, results) {
+  let pts = 0, correct = 0, exact = 0;
+  Object.entries(results).forEach(([mid, actual]) => {
+    const pick = playerPicks[mid];
+    if (!pick || !pick.result) return;
+    const rp = roundPts(mid);
+    if (pick.result === actual.result) {
+      pts += rp;
+      correct++;
+      if (
+        pick.score_home !== null && pick.score_home !== undefined && pick.score_home !== '' &&
+        pick.score_away !== null && pick.score_away !== undefined && pick.score_away !== '' &&
+        actual.score_home !== null && actual.score_away !== null &&
+        Number(pick.score_home) === Number(actual.score_home) &&
+        Number(pick.score_away) === Number(actual.score_away)
+      ) {
+        pts += 1;
+        exact++;
+      }
+    }
+  });
+  return { pts, correct, exact };
+}
+
+function LeaderboardTab({ players, picks, results }) {
+  if (players.length === 0) {
+    return <div className="empty-state"><div className="icon">\u26BD</div>Add players in the Setup tab first.</div>;
+  }
+
+  const data = players
+    .map(p => ({ name: p, ...calcPoints(picks[p] || {}, results) }))
+    .sort((a, b) => b.pts - a.pts);
+
+  const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+  const completedMatches = ALL_MATCHES.filter(m => results[m.id]);
+
+  return (
+    <div>
+      <p className="section-label">Leaderboard &middot; {completedMatches.length} results in</p>
+      <div className="card">
+        <div className="lb-header">
+          <span>#</span><span>Player</span><span>Pts</span><span>Hits</span><span>Exact</span>
+        </div>
+        {data.map((p, i) => (
+          <div className="lb-row" key={p.name}>
+            <div className={`lb-rank ${i < 3 ? 'top' : ''}`}>{medals[i] || i + 1}</div>
+            <div className="lb-name">{p.name}</div>
+            <div className="lb-pts">{p.pts}</div>
+            <div className="lb-sub">{p.correct}</div>
+            <div className="lb-sub">{p.exact}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'flex', gap:'16px', flexWrap:'wrap', fontSize:'12px', color:'var(--text-tertiary)', marginTop:'0.5rem', padding:'0 4px'}}>
+        <span>Pts = total points</span><span>Hits = correct results</span><span>Exact = exact scores</span>
+      </div>
+
+      {completedMatches.length > 0 && (
+        <>
+          <p className="section-label" style={{marginTop:'1.5rem'}}>Pick breakdown</p>
+          {completedMatches.map(m => {
+            const actual = results[m.id];
+            return (
+              <div className="card" key={m.id} style={{padding:'0.75rem 1.25rem'}}>
+                <div style={{fontSize:'13px', fontWeight:600, marginBottom:'6px'}}>
+                  {m.hf} {m.h} vs {m.af} {m.a}
+                  <span style={{fontWeight:400, color:'var(--text-secondary)'}}>
+                    {' '}&rarr; {actual.result === 'home' ? `${m.h} win` : actual.result === 'away' ? `${m.a} win` : 'Draw'}
+                    {actual.score_home !== null && actual.score_away !== null ? ` (${actual.score_home}-${actual.score_away})` : ''}
+                  </span>
+                </div>
+                <div className="picks-summary">
+                  {players.map(p => {
+                    const pick = (picks[p] || {})[m.id];
+                    const correct = pick?.result === actual.result;
+                    const cls = pick?.result === 'home' ? 'home' : pick?.result === 'draw' ? 'draw' : pick?.result === 'away' ? 'away' : 'none';
+                    return (
+                      <span key={p} className={`pick-pill ${cls}`} title={`${p}: ${pick?.result || 'no pick'}`}>
+                        {p.split(' ')[0]} {correct ? '\u2713' : ''}{!pick?.result ? '\u2014' : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
