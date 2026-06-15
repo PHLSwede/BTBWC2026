@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BTB WC 2026 - Make Your Picks</title>
+<title>BTB WC 2026 - Group Stage Picks</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -50,11 +50,11 @@
   .player-setup { display: flex; gap: 8px; }
   .player-setup input { flex: 1; }
   input, select, button { font-family: inherit; font-size: 14px; }
-  input[type="text"], input[type="password"] {
+  input[type="text"] {
     background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md);
     color: var(--text); padding: 9px 12px; outline: none;
   }
-  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--blue); }
+  input[type="text"]:focus { border-color: var(--blue); }
   button { cursor: pointer; }
   .btn { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: var(--text); padding: 9px 16px; font-weight: 500; transition: all 0.15s; }
   .btn:hover { background: var(--border-light); }
@@ -66,25 +66,21 @@
   .player-btn.selected { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); font-weight: 500; }
   .player-btn:hover:not(.selected) { color: var(--text); border-color: var(--text-tertiary); }
 
-  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.25rem; margin-bottom: 0.5rem; }
-  .match-card.locked { opacity: 0.6; }
-  .match-meta { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; letter-spacing: 0.04em; }
-  .match-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
-  .team-home { text-align: right; }
-  .team-away { text-align: left; }
-  .team-name { font-size: 14px; font-weight: 500; }
-  .team-flag { font-size: 20px; }
-  .match-sep { font-size: 12px; color: var(--text-tertiary); text-align: center; }
-  .result-btns { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
-  .result-btn { padding: 6px 14px; font-size: 12px; border: 1px solid var(--border-light); border-radius: 20px; background: var(--surface-2); cursor: pointer; color: var(--text-secondary); transition: all 0.1s; font-weight: 500; }
-  .result-btn:hover { color: var(--text); border-color: var(--text-tertiary); }
-  .result-btn.picked-home { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
-  .result-btn.picked-draw { background: var(--border-light); color: var(--text); border-color: var(--text-tertiary); }
-  .result-btn.picked-away { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
-  .result-btn:disabled { cursor: not-allowed; opacity: 0.7; }
-
-  .group-header { display: flex; align-items: center; gap: 8px; margin: 1.25rem 0 0.5rem; }
+  .group-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 1.25rem 0 0.5rem; }
   .group-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; background: var(--surface-2); border-radius: 20px; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
+  .group-hint { font-size: 11px; color: var(--text-tertiary); }
+
+  .rank-list { display: flex; flex-direction: column; gap: 6px; }
+  .rank-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; }
+  .rank-num { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; }
+  .rank-num.gold { background: #fff3cd; color: #946200; border-color: #f0d28a; }
+  .rank-num.silver { background: #eef1f3; color: #5b6770; border-color: #cfd6db; }
+  .rank-team-flag { font-size: 18px; }
+  .rank-team-name { font-size: 14px; font-weight: 500; flex: 1; }
+  .rank-arrows { display: flex; gap: 4px; }
+  .arrow-btn { width: 28px; height: 28px; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-secondary); cursor: pointer; }
+  .arrow-btn:hover { color: var(--text); border-color: var(--text-tertiary); }
+  .arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   .progress-bar { height: 4px; background: var(--surface-2); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; flex: 1; }
   .progress-fill { height: 100%; border-radius: 2px; background: var(--blue); transition: width 0.3s; }
@@ -92,8 +88,6 @@
   .save-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; margin-top: 1rem; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: var(--radius-lg); cursor: pointer; color: var(--blue-text); transition: all 0.15s; }
   .save-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green-text); }
   .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .ko-round-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin: 1.1rem 0 0.5rem; }
 
   .lock-banner { display: flex; align-items: center; gap: 10px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--amber); }
 
@@ -120,16 +114,40 @@ const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ROUND_POINTS = { group: 2, r32: 3, r16: 4, qf: 5, sf: 6, final: 8 };
-const ROUND_LABELS = {
-  group: 'Group stage',
-  r32: 'Round of 32',
-  r16: 'Round of 16',
-  qf: 'Quarter-finals',
-  sf: 'Semi-finals',
-  final: 'Final'
+// Real WC2026 groups, in initial/default order (FIFA seeding order, not a prediction)
+const GROUPS = {
+  A: ['Mexico', 'South Korea', 'Czechia', 'South Africa'],
+  B: ['Switzerland', 'Canada', 'Qatar', 'Bosnia & Herzegovina'],
+  C: ['Brazil', 'Morocco', 'Haiti', 'Scotland'],
+  D: ['USA', 'Turkey', 'Australia', 'Paraguay'],
+  E: ['Germany', 'Ecuador', 'Ivory Coast', 'Curaçao'],
+  F: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+  G: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  H: ['Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay'],
+  I: ['France', 'Senegal', 'Iraq', 'Norway'],
+  J: ['Argentina', 'Algeria', 'Austria', 'Jordan'],
+  K: ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'],
+  L: ['England', 'Croatia', 'Ghana', 'Panama']
 };
-const ROUND_ORDER = ['group', 'r32', 'r16', 'qf', 'sf', 'final'];
+const GROUP_NAMES = Object.keys(GROUPS);
+
+const FLAGS = {
+  'Mexico': '\u{1F1F2}\u{1F1FD}', 'South Africa': '\u{1F1FF}\u{1F1E6}', 'South Korea': '\u{1F1F0}\u{1F1F7}', 'Korea Republic': '\u{1F1F0}\u{1F1F7}', 'Czechia': '\u{1F1E8}\u{1F1FF}', 'Czech Republic': '\u{1F1E8}\u{1F1FF}',
+  'Switzerland': '\u{1F1E8}\u{1F1ED}', 'Canada': '\u{1F1E8}\u{1F1E6}', 'Qatar': '\u{1F1F6}\u{1F1E6}', 'Bosnia & Herzegovina': '\u{1F1E7}\u{1F1E6}', 'Bosnia and Herzegovina': '\u{1F1E7}\u{1F1E6}',
+  'Brazil': '\u{1F1E7}\u{1F1F7}', 'Morocco': '\u{1F1F2}\u{1F1E6}', 'Haiti': '\u{1F1ED}\u{1F1F9}', 'Scotland': '\u{1F3F4}',
+  'USA': '\u{1F1FA}\u{1F1F8}', 'United States': '\u{1F1FA}\u{1F1F8}', 'Turkey': '\u{1F1F9}\u{1F1F7}', 'Türkiye': '\u{1F1F9}\u{1F1F7}', 'Australia': '\u{1F1E6}\u{1F1FA}', 'Paraguay': '\u{1F1F5}\u{1F1FE}',
+  'Germany': '\u{1F1E9}\u{1F1EA}', 'Ecuador': '\u{1F1EA}\u{1F1E8}', 'Ivory Coast': '\u{1F1E8}\u{1F1EE}', "Côte d'Ivoire": '\u{1F1E8}\u{1F1EE}', 'Curacao': '\u{1F1E8}\u{1F1FC}', 'Curaçao': '\u{1F1E8}\u{1F1FC}',
+  'Netherlands': '\u{1F1F3}\u{1F1F1}', 'Japan': '\u{1F1EF}\u{1F1F5}', 'Sweden': '\u{1F1F8}\u{1F1EA}', 'Tunisia': '\u{1F1F9}\u{1F1F3}',
+  'Belgium': '\u{1F1E7}\u{1F1EA}', 'Egypt': '\u{1F1EA}\u{1F1EC}', 'Iran': '\u{1F1EE}\u{1F1F7}', 'IR Iran': '\u{1F1EE}\u{1F1F7}', 'New Zealand': '\u{1F1F3}\u{1F1FF}',
+  'Spain': '\u{1F1EA}\u{1F1F8}', 'Cape Verde': '\u{1F1E8}\u{1F1FB}', 'Cabo Verde': '\u{1F1E8}\u{1F1FB}', 'Saudi Arabia': '\u{1F1F8}\u{1F1E6}', 'Uruguay': '\u{1F1FA}\u{1F1FE}',
+  'France': '\u{1F1EB}\u{1F1F7}', 'Senegal': '\u{1F1F8}\u{1F1F3}', 'Iraq': '\u{1F1EE}\u{1F1F6}', 'Norway': '\u{1F1F3}\u{1F1F4}',
+  'Argentina': '\u{1F1E6}\u{1F1F7}', 'Algeria': '\u{1F1E9}\u{1F1FF}', 'Austria': '\u{1F1E6}\u{1F1F9}', 'Jordan': '\u{1F1EF}\u{1F1F4}',
+  'Portugal': '\u{1F1F5}\u{1F1F9}', 'DR Congo': '\u{1F1E8}\u{1F1E9}', 'Congo DR': '\u{1F1E8}\u{1F1E9}', 'Uzbekistan': '\u{1F1FA}\u{1F1FF}', 'Colombia': '\u{1F1E8}\u{1F1F4}',
+  'England': '\u{1F3F4}', 'Croatia': '\u{1F1ED}\u{1F1F7}', 'Ghana': '\u{1F1EC}\u{1F1ED}', 'Panama': '\u{1F1F5}\u{1F1E6}'
+};
+function flagFor(team) { return FLAGS[team] || '\u{1F30D}'; }
+
+const RANK_LABELS = ['1st', '2nd', '3rd', '4th'];
 
 function useToast() {
   const [msg, setMsg] = useState(null);
@@ -140,67 +158,63 @@ function useToast() {
   return [msg, show];
 }
 
-function groupMatchesByRound(matches) {
-  const byRound = {};
-  matches.forEach(m => {
-    if (!byRound[m.round]) byRound[m.round] = [];
-    byRound[m.round].push(m);
-  });
-  return byRound;
+function rankClass(i) {
+  if (i === 0) return 'gold';
+  if (i === 1) return 'silver';
+  return '';
 }
 
-function MatchCard({ m, pick, onSetPick, locked }) {
+function GroupRanker({ groupName, order, onMove, locked }) {
   return (
-    <div className={`match-card ${locked ? 'locked' : ''}`}>
-      <div className="match-meta">{m.pts} pts &middot; {ROUND_LABELS[m.round]}</div>
-      <div className="match-teams">
-        <div className="team-home">
-          <div className="team-flag">{m.home_flag}</div>
-          <div className="team-name">{m.home_team}</div>
-        </div>
-        <div className="match-sep">vs</div>
-        <div className="team-away">
-          <div className="team-flag">{m.away_flag}</div>
-          <div className="team-name">{m.away_team}</div>
-        </div>
+    <div>
+      <div className="group-header">
+        <span className="group-badge">Group {groupName}</span>
+        <span className="group-hint">1st &amp; 2nd advance to knockout</span>
       </div>
-      <div className="result-btns">
-        <button className={`result-btn ${pick==='home'?'picked-home':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'home')}>{m.home_team.split(' ')[0]} win</button>
-        <button className={`result-btn ${pick==='draw'?'picked-draw':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'draw')}>Draw</button>
-        <button className={`result-btn ${pick==='away'?'picked-away':''}`} disabled={locked} onClick={() => onSetPick(m.id, 'away')}>{m.away_team.split(' ')[0]} win</button>
+      <div className="rank-list">
+        {order.map((team, i) => (
+          <div className="rank-row" key={team}>
+            <div className={`rank-num ${rankClass(i)}`}>{i + 1}</div>
+            <span className="rank-team-flag">{flagFor(team)}</span>
+            <span className="rank-team-name">{team}</span>
+            <div className="rank-arrows">
+              <button className="arrow-btn" disabled={locked || i === 0} onClick={() => onMove(groupName, i, -1)} title="Move up">&uarr;</button>
+              <button className="arrow-btn" disabled={locked || i === order.length - 1} onClick={() => onMove(groupName, i, 1)} title="Move down">&darr;</button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 function App() {
-  const [matches, setMatches] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [locks, setLocks] = useState({ group_locked: false, knockout_locked: false });
+  const [locks, setLocks] = useState({ group_picks_locked: false });
   const [loading, setLoading] = useState(true);
   const [toast, showToast] = useToast();
 
-  // Registration / active player state
   const [name, setName] = useState('');
   const [active, setActive] = useState(() => localStorage.getItem('wc2026_player') || null);
-  const [picks, setPicks] = useState({});
+  const [order, setOrder] = useState(() => {
+    const initial = {};
+    GROUP_NAMES.forEach(g => { initial[g] = [...GROUPS[g]]; });
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
-      const [{ data: mt, error: e1 }, { data: pl, error: e2 }, { data: st, error: e3 }] = await Promise.all([
-        supabase.from('matches').select('*'),
+      const [{ data: pl, error: e1 }, { data: st, error: e2 }] = await Promise.all([
         supabase.from('players').select('*').order('created_at', { ascending: true }),
         supabase.from('tournament_status').select('*').eq('id', 1).maybeSingle()
       ]);
       if (e1) throw e1;
-      if (e2) throw e2;
-      if (e3) console.error('Status load error', e3);
+      if (e2) console.error('Status load error', e2);
 
-      setMatches(mt || []);
       setPlayers((pl || []).map(p => p.name));
-      if (st) setLocks({ group_locked: !!st.group_locked, knockout_locked: !!st.knockout_locked });
+      if (st) setLocks({ group_picks_locked: !!st.group_picks_locked });
     } catch (err) {
       console.error('Load error', err);
       showToast('Could not load tournament data');
@@ -211,15 +225,30 @@ function App() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Load this player's existing picks once we know who's active
+  // Load this player's existing group rankings
   useEffect(() => {
     if (!active) return;
     (async () => {
-      const { data, error } = await supabase.from('picks').select('*').eq('player_name', active);
+      const { data, error } = await supabase.from('group_picks').select('*').eq('player_name', active);
       if (error) { console.error(error); return; }
-      const map = {};
-      (data || []).forEach(row => { map[row.match_id] = row.pick; });
-      setPicks(map);
+      if (!data || data.length === 0) return;
+      const next = {};
+      GROUP_NAMES.forEach(g => { next[g] = [...GROUPS[g]]; });
+      // Build ordered arrays from saved predicted_rank values
+      const byGroup = {};
+      data.forEach(row => {
+        if (!byGroup[row.group_name]) byGroup[row.group_name] = [];
+        byGroup[row.group_name].push(row);
+      });
+      Object.entries(byGroup).forEach(([g, rows]) => {
+        const sorted = rows.sort((a, b) => a.predicted_rank - b.predicted_rank);
+        const teams = sorted.map(r => r.team);
+        // Only use if it's a complete, valid set for this group
+        if (teams.length === GROUPS[g].length && teams.every(t => GROUPS[g].includes(t))) {
+          next[g] = teams;
+        }
+      });
+      setOrder(next);
     })();
   }, [active]);
 
@@ -229,7 +258,7 @@ function App() {
 
     if (!players.includes(trimmed)) {
       const { error } = await supabase.from('players').insert({ name: trimmed });
-      if (error && error.code !== '23505') { // ignore duplicate-key race
+      if (error && error.code !== '23505') {
         showToast('Could not register');
         console.error(error);
         return;
@@ -244,41 +273,48 @@ function App() {
 
   const switchPlayer = () => {
     setActive(null);
-    setPicks({});
+    const initial = {};
+    GROUP_NAMES.forEach(g => { initial[g] = [...GROUPS[g]]; });
+    setOrder(initial);
     localStorage.removeItem('wc2026_player');
   };
 
-  const onSetPick = (matchId, pick) => {
-    setPicks(prev => ({ ...prev, [matchId]: pick }));
+  const onMove = (groupName, index, direction) => {
+    setOrder(prev => {
+      const arr = [...prev[groupName]];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= arr.length) return prev;
+      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+      return { ...prev, [groupName]: arr };
+    });
     setSaved(false);
   };
 
   const onSave = async () => {
-    const rows = Object.entries(picks)
-      .filter(([, v]) => v)
-      .map(([matchId, pick]) => ({ player_name: active, match_id: matchId, pick }));
-    if (rows.length === 0) { showToast('No picks to save'); return; }
+    const rows = [];
+    GROUP_NAMES.forEach(g => {
+      order[g].forEach((team, i) => {
+        rows.push({
+          player_name: active,
+          group_name: g,
+          team: team,
+          predicted_rank: i + 1
+        });
+      });
+    });
     setSaving(true);
-    const { error } = await supabase.from('picks').upsert(rows, { onConflict: 'player_name,match_id' });
+    // Delete existing rows for this player first (positions can shift, conflicts on unique constraints otherwise)
+    const { error: delErr } = await supabase.from('group_picks').delete().eq('player_name', active);
+    if (delErr) { setSaving(false); showToast('Save failed - check connection'); console.error(delErr); return; }
+    const { error } = await supabase.from('group_picks').insert(rows);
     setSaving(false);
     if (error) { showToast('Save failed - check connection'); console.error(error); return; }
     setSaved(true);
-    showToast('Picks saved!');
+    showToast('Group picks saved!');
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const byRound = groupMatchesByRound(matches);
-  const groupMatches = byRound.group || [];
-  const groupsPresent = [...new Set(groupMatches.map(m => m.group_name).filter(Boolean))].sort();
-  const knockoutRounds = ROUND_ORDER.filter(r => r !== 'group' && byRound[r] && byRound[r].length > 0);
-
-  const groupLocked = !!locks.group_locked;
-  const koLocked = !!locks.knockout_locked;
-  const allLocked = groupLocked && koLocked;
-
-  const total = matches.length;
-  const done = matches.filter(m => picks[m.id]).length;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const groupLocked = !!locks.group_picks_locked;
 
   return (
     <div className="app">
@@ -287,7 +323,7 @@ function App() {
           <span className="trophy">🏆</span>
           <div>
             <h1>BTB WC 2026</h1>
-            <div className="header-sub">Make your picks</div>
+            <div className="header-sub">Group stage picks</div>
           </div>
         </div>
         <a className="top-link" href="./index.html">Standings &amp; results &rarr;</a>
@@ -317,8 +353,6 @@ function App() {
             )}
           </div>
         </div>
-      ) : matches.length === 0 ? (
-        <div className="empty-state"><div className="icon">⚽</div>No fixtures loaded yet. Check back soon.</div>
       ) : (
         <div>
           <div className="card" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px'}}>
@@ -332,66 +366,33 @@ function App() {
           {groupLocked && (
             <div className="lock-banner">
               <span>🔒</span>
-              <span>Group stage picks are locked &mdash; the tournament has started for this stage.</span>
-            </div>
-          )}
-          {koLocked && (
-            <div className="lock-banner">
-              <span>🔒</span>
-              <span>Knockout stage picks are locked.</span>
+              <span>Group stage picks are locked &mdash; the tournament has started.</span>
             </div>
           )}
 
-          <div style={{display:'flex', alignItems:'center', gap:'10px', margin:'1.25rem 0'}}>
-            <div className="progress-bar"><div className="progress-fill" style={{width: `${pct}%`}}></div></div>
-            <span style={{fontSize:'12px', color:'var(--text-secondary)', whiteSpace:'nowrap'}}>{done}/{total} picked</span>
+          <div className="card" style={{marginTop:'1rem'}}>
+            <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>
+              For each group, rank the 4 teams from 1st to 4th the way you think they'll finish.
+              Use the arrows to reorder. Scoring: <strong>1pt</strong> for a correct 4th place,
+              <strong> 2pts</strong> for 3rd, <strong>3pts</strong> for 2nd, and <strong>4pts</strong> for
+              correctly picking the group winner &mdash; up to 48pts if you nail every group.
+            </p>
           </div>
 
-          {groupMatches.length > 0 && (
-            <>
-              <p className="section-label">Group stage</p>
-              {groupsPresent.map(g => (
-                <div key={g}>
-                  <div className="group-header"><span className="group-badge">Group {g}</span></div>
-                  {groupMatches.filter(m => m.group_name === g).map(m => (
-                    <MatchCard key={m.id} m={m} pick={picks[m.id]} onSetPick={onSetPick} locked={groupLocked} />
-                  ))}
-                </div>
-              ))}
-              {groupMatches.some(m => !m.group_name) && (
-                <div>
-                  <div className="group-header"><span className="group-badge">Other group matches</span></div>
-                  {groupMatches.filter(m => !m.group_name).map(m => (
-                    <MatchCard key={m.id} m={m} pick={picks[m.id]} onSetPick={onSetPick} locked={groupLocked} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+          <p className="section-label" style={{marginTop:'1.25rem'}}>Group rankings</p>
+          {GROUP_NAMES.map(g => (
+            <div className="card" key={g}>
+              <GroupRanker groupName={g} order={order[g]} onMove={onMove} locked={groupLocked} />
+            </div>
+          ))}
 
-          {knockoutRounds.length > 0 && (
-            <>
-              <p className="section-label" style={{marginTop:'1.5rem'}}>Knockout stage</p>
-              {knockoutRounds.map(r => (
-                <div key={r}>
-                  <div className="ko-round-label">{ROUND_LABELS[r]}</div>
-                  {byRound[r].map(m => (
-                    <MatchCard key={m.id} m={m} pick={picks[m.id]} onSetPick={onSetPick} locked={koLocked} />
-                  ))}
-                </div>
-              ))}
-            </>
-          )}
-
-          {knockoutRounds.length === 0 && (
-            <p style={{fontSize:'12px', color:'var(--text-tertiary)', marginTop:'1.5rem'}}>
-              Knockout stage matchups aren't available yet &mdash; they'll appear here once the Round of 32 bracket is set.
-            </p>
-          )}
-
-          <button className={`save-btn ${saved ? 'saved' : ''}`} onClick={onSave} disabled={saving || allLocked}>
-            {saving ? 'Saving...' : saved ? '✓ Saved' : allLocked ? 'Picks locked' : 'Save my picks'}
+          <button className={`save-btn ${saved ? 'saved' : ''}`} onClick={onSave} disabled={saving || groupLocked}>
+            {saving ? 'Saving...' : saved ? '✓ Saved' : groupLocked ? 'Picks locked' : 'Save my group picks'}
           </button>
+
+          <p style={{fontSize:'12px', color:'var(--text-tertiary)', textAlign:'center', marginTop:'1.5rem'}}>
+            Once the group stage finishes, the playoff bracket will open on a separate page for your knockout picks.
+          </p>
         </div>
       )}
 

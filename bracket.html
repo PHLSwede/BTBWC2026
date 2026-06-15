@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BTB WC 2026 - Playoff Bracket</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface-2: #f0f0f0;
+    --border: #e0e0e0;
+    --border-light: #cccccc;
+    --text: #000000;
+    --text-secondary: #5e5e5e;
+    --text-tertiary: #8c8c8c;
+    --blue: #ec0016;
+    --blue-bg: #fde8ea;
+    --blue-text: #ec0016;
+    --green: #00a14b;
+    --green-bg: #e3f5ec;
+    --green-text: #00763a;
+    --amber: #d97706;
+    --amber-bg: #fdf1e0;
+    --red: #ec0016;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; }
+  .app { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .trophy { font-size: 26px; }
+  .header h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  .header-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .top-link { font-size: 13px; color: var(--blue-text); text-decoration: none; font-weight: 500; white-space: nowrap; }
+  .top-link:hover { text-decoration: underline; }
+
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 0.75rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 0.75rem; }
+
+  .player-setup { display: flex; gap: 8px; }
+  .player-setup input { flex: 1; }
+  input, select, button { font-family: inherit; font-size: 14px; }
+  input[type="text"] {
+    background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+    color: var(--text); padding: 9px 12px; outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--blue); }
+  button { cursor: pointer; }
+  .btn { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: var(--text); padding: 9px 16px; font-weight: 500; transition: all 0.15s; }
+  .btn:hover { background: var(--border-light); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.primary { background: var(--blue-bg); border-color: var(--blue); color: var(--blue-text); }
+
+  .player-selector { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .player-btn { padding: 6px 14px; font-size: 13px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--surface); cursor: pointer; color: var(--text-secondary); transition: all 0.1s; }
+  .player-btn.selected { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); font-weight: 500; }
+  .player-btn:hover:not(.selected) { color: var(--text); border-color: var(--text-tertiary); }
+
+  .ko-round-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin: 1.1rem 0 0.5rem; }
+
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.25rem; margin-bottom: 0.5rem; }
+  .match-card.locked { opacity: 0.6; }
+  .match-meta { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; letter-spacing: 0.04em; }
+  .pick-btns { display: flex; gap: 8px; }
+  .pick-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--surface-2); cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.1s; }
+  .pick-btn:hover { color: var(--text); border-color: var(--text-tertiary); }
+  .pick-btn.selected { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
+  .pick-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+  .pick-flag { font-size: 18px; }
+
+  .progress-bar { height: 4px; background: var(--surface-2); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; flex: 1; }
+  .progress-fill { height: 100%; border-radius: 2px; background: var(--blue); transition: width 0.3s; }
+
+  .save-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; margin-top: 1rem; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: var(--radius-lg); cursor: pointer; color: var(--blue-text); transition: all 0.15s; }
+  .save-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green-text); }
+  .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .lock-banner { display: flex; align-items: center; gap: 10px; background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--amber); }
+
+  .espn-sync-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; }
+  .espn-sync-card .btn { white-space: nowrap; }
+  .lock-title { font-size: 13px; font-weight: 500; }
+  .lock-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); font-size: 14px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 0.75rem; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); border: 1px solid var(--border-light); color: var(--surface); padding: 10px 22px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  .loading { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .footer-note { text-align: center; font-size: 12px; color: var(--text-tertiary); margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react,env">
+const { useState, useEffect, useCallback } = React;
+
+const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ESPN_PROXY_URL = "https://guitar-proxy.tight-meadow-3e46.workers.dev/wc2026";
+const TOURNAMENT_DATES = "20260611-20260719";
+
+const ROUND_LABELS = {
+  r32: 'Round of 32',
+  r16: 'Round of 16',
+  qf: 'Quarter-finals',
+  sf: 'Semi-finals',
+  final: 'Final'
+};
+const ROUND_ORDER = ['r32', 'r16', 'qf', 'sf', 'final'];
+const ROUND_POINTS = { r32: 1, r16: 2, qf: 3, sf: 4, final: 5 };
+
+const SLUG_TO_ROUND = {
+  'round-of-32': 'r32',
+  'round-of-16': 'r16',
+  'quarterfinal': 'qf',
+  'quarterfinals': 'qf',
+  'semifinal': 'sf',
+  'semifinals': 'sf',
+  'final': 'final'
+};
+
+// Map ESPN team display names back to canonical roster names
+const ESPN_NAME_MAP = {
+  'United States': 'USA',
+  'Korea Republic': 'South Korea',
+  'Czech Republic': 'Czechia',
+  'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+  "Côte d'Ivoire": 'Ivory Coast',
+  'Curaçao': 'Curacao',
+  'IR Iran': 'Iran',
+  'Cabo Verde': 'Cape Verde',
+  'Türkiye': 'Turkey',
+  'Congo DR': 'DR Congo'
+};
+function normalizeTeam(name) { return ESPN_NAME_MAP[name] || name; }
+
+const FLAGS = {
+  'Mexico': '\u{1F1F2}\u{1F1FD}', 'South Africa': '\u{1F1FF}\u{1F1E6}', 'South Korea': '\u{1F1F0}\u{1F1F7}', 'Korea Republic': '\u{1F1F0}\u{1F1F7}', 'Czechia': '\u{1F1E8}\u{1F1FF}', 'Czech Republic': '\u{1F1E8}\u{1F1FF}',
+  'Switzerland': '\u{1F1E8}\u{1F1ED}', 'Canada': '\u{1F1E8}\u{1F1E6}', 'Qatar': '\u{1F1F6}\u{1F1E6}', 'Bosnia & Herzegovina': '\u{1F1E7}\u{1F1E6}', 'Bosnia and Herzegovina': '\u{1F1E7}\u{1F1E6}',
+  'Brazil': '\u{1F1E7}\u{1F1F7}', 'Morocco': '\u{1F1F2}\u{1F1E6}', 'Haiti': '\u{1F1ED}\u{1F1F9}', 'Scotland': '\u{1F3F4}',
+  'USA': '\u{1F1FA}\u{1F1F8}', 'United States': '\u{1F1FA}\u{1F1F8}', 'Turkey': '\u{1F1F9}\u{1F1F7}', 'Türkiye': '\u{1F1F9}\u{1F1F7}', 'Australia': '\u{1F1E6}\u{1F1FA}', 'Paraguay': '\u{1F1F5}\u{1F1FE}',
+  'Germany': '\u{1F1E9}\u{1F1EA}', 'Ecuador': '\u{1F1EA}\u{1F1E8}', 'Ivory Coast': '\u{1F1E8}\u{1F1EE}', "Côte d'Ivoire": '\u{1F1E8}\u{1F1EE}', 'Curacao': '\u{1F1E8}\u{1F1FC}', 'Curaçao': '\u{1F1E8}\u{1F1FC}',
+  'Netherlands': '\u{1F1F3}\u{1F1F1}', 'Japan': '\u{1F1EF}\u{1F1F5}', 'Sweden': '\u{1F1F8}\u{1F1EA}', 'Tunisia': '\u{1F1F9}\u{1F1F3}',
+  'Belgium': '\u{1F1E7}\u{1F1EA}', 'Egypt': '\u{1F1EA}\u{1F1EC}', 'Iran': '\u{1F1EE}\u{1F1F7}', 'IR Iran': '\u{1F1EE}\u{1F1F7}', 'New Zealand': '\u{1F1F3}\u{1F1FF}',
+  'Spain': '\u{1F1EA}\u{1F1F8}', 'Cape Verde': '\u{1F1E8}\u{1F1FB}', 'Cabo Verde': '\u{1F1E8}\u{1F1FB}', 'Saudi Arabia': '\u{1F1F8}\u{1F1E6}', 'Uruguay': '\u{1F1FA}\u{1F1FE}',
+  'France': '\u{1F1EB}\u{1F1F7}', 'Senegal': '\u{1F1F8}\u{1F1F3}', 'Iraq': '\u{1F1EE}\u{1F1F6}', 'Norway': '\u{1F1F3}\u{1F1F4}',
+  'Argentina': '\u{1F1E6}\u{1F1F7}', 'Algeria': '\u{1F1E9}\u{1F1FF}', 'Austria': '\u{1F1E6}\u{1F1F9}', 'Jordan': '\u{1F1EF}\u{1F1F4}',
+  'Portugal': '\u{1F1F5}\u{1F1F9}', 'DR Congo': '\u{1F1E8}\u{1F1E9}', 'Congo DR': '\u{1F1E8}\u{1F1E9}', 'Uzbekistan': '\u{1F1FA}\u{1F1FF}', 'Colombia': '\u{1F1E8}\u{1F1F4}',
+  'England': '\u{1F3F4}', 'Croatia': '\u{1F1ED}\u{1F1F7}', 'Ghana': '\u{1F1EC}\u{1F1ED}', 'Panama': '\u{1F1F5}\u{1F1E6}'
+};
+function flagFor(team) { return FLAGS[team] || '\u{1F30D}'; }
+
+function useToast() {
+  const [msg, setMsg] = useState(null);
+  const show = useCallback((m) => {
+    setMsg(m);
+    setTimeout(() => setMsg(null), 2200);
+  }, []);
+  return [msg, show];
+}
+
+// Parse one ESPN event into a playoff_matches row, or null if not a playoff round
+function parsePlayoffEvent(ev) {
+  const comp = ev?.competitions?.[0];
+  if (!comp) return null;
+  const slug = ev?.season?.slug;
+  const round = SLUG_TO_ROUND[slug];
+  if (!round) return null;
+
+  const competitors = comp.competitors || [];
+  const home = competitors.find(c => c.homeAway === 'home');
+  const away = competitors.find(c => c.homeAway === 'away');
+  if (!home || !away) return null;
+
+  const homeTeam = normalizeTeam(home.team?.displayName || home.team?.name || '');
+  const awayTeam = normalizeTeam(away.team?.displayName || away.team?.name || '');
+  if (!homeTeam || !awayTeam) return null;
+
+  const completed = !!comp.status?.type?.completed;
+  let result = null;
+  if (completed) {
+    const hs = home.score !== undefined ? Number(home.score) : null;
+    const as = away.score !== undefined ? Number(away.score) : null;
+    if (hs !== null && as !== null) {
+      if (hs > as) result = 'home';
+      else if (hs < as) result = 'away';
+      // knockout matches can't end in a draw, but if scores are equal (e.g. before penalties recorded) leave null
+    }
+  }
+
+  return {
+    id: ev.id,
+    round,
+    home_team: homeTeam,
+    away_team: awayTeam,
+    home_flag: flagFor(homeTeam),
+    away_flag: flagFor(awayTeam),
+    match_date: ev.date || comp.date || null,
+    pts: ROUND_POINTS[round] || 1,
+    result
+  };
+}
+
+function groupByRound(matches) {
+  const byRound = {};
+  matches.forEach(m => {
+    if (!byRound[m.round]) byRound[m.round] = [];
+    byRound[m.round].push(m);
+  });
+  Object.values(byRound).forEach(arr => arr.sort((a, b) => new Date(a.match_date) - new Date(b.match_date)));
+  return byRound;
+}
+
+function MatchCard({ m, pick, onPick, locked }) {
+  return (
+    <div className={`match-card ${locked ? 'locked' : ''}`}>
+      <div className="match-meta">{m.pts} pt{m.pts === 1 ? '' : 's'} if correct</div>
+      <div className="pick-btns">
+        <button className={`pick-btn ${pick === 'home' ? 'selected' : ''}`} disabled={locked} onClick={() => onPick(m.id, 'home')}>
+          <span className="pick-flag">{m.home_flag}</span>{m.home_team}
+        </button>
+        <button className={`pick-btn ${pick === 'away' ? 'selected' : ''}`} disabled={locked} onClick={() => onPick(m.id, 'away')}>
+          <span className="pick-flag">{m.away_flag}</span>{m.away_team}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [players, setPlayers] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [locks, setLocks] = useState({ playoff_picks_locked: false });
+  const [loading, setLoading] = useState(true);
+  const [toast, showToast] = useToast();
+
+  const [name, setName] = useState('');
+  const [active, setActive] = useState(() => localStorage.getItem('wc2026_player') || null);
+  const [picks, setPicks] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const [espnSyncing, setEspnSyncing] = useState(false);
+  const [espnLastSync, setEspnLastSync] = useState(null);
+  const [espnError, setEspnError] = useState(false);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [{ data: pl, error: e1 }, { data: pm, error: e2 }, { data: st, error: e3 }] = await Promise.all([
+        supabase.from('players').select('*').order('created_at', { ascending: true }),
+        supabase.from('playoff_matches').select('*'),
+        supabase.from('tournament_status').select('*').eq('id', 1).maybeSingle()
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+      if (e3) console.error('Status load error', e3);
+
+      setPlayers((pl || []).map(p => p.name));
+      setMatches(pm || []);
+      if (st) setLocks({ playoff_picks_locked: !!st.playoff_picks_locked });
+    } catch (err) {
+      console.error('Load error', err);
+      showToast('Could not load tournament data');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    if (!active) return;
+    (async () => {
+      const { data, error } = await supabase.from('playoff_picks').select('*').eq('player_name', active);
+      if (error) { console.error(error); return; }
+      const map = {};
+      (data || []).forEach(row => { map[row.match_id] = row.pick; });
+      setPicks(map);
+    })();
+  }, [active]);
+
+  const registerOrSelect = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) { showToast('Enter your name'); return; }
+    if (!players.includes(trimmed)) {
+      const { error } = await supabase.from('players').insert({ name: trimmed });
+      if (error && error.code !== '23505') {
+        showToast('Could not register');
+        console.error(error);
+        return;
+      }
+      setPlayers(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
+    }
+    setActive(trimmed);
+    localStorage.setItem('wc2026_player', trimmed);
+    setName('');
+    showToast(`Welcome, ${trimmed}!`);
+  };
+
+  const switchPlayer = () => {
+    setActive(null);
+    setPicks({});
+    localStorage.removeItem('wc2026_player');
+  };
+
+  const onPick = (matchId, pick) => {
+    setPicks(prev => ({ ...prev, [matchId]: pick }));
+    setSaved(false);
+  };
+
+  const onSave = async () => {
+    const rows = Object.entries(picks)
+      .filter(([, v]) => v)
+      .map(([matchId, pick]) => ({ player_name: active, match_id: matchId, pick }));
+    if (rows.length === 0) { showToast('No picks to save'); return; }
+    setSaving(true);
+    const { error } = await supabase.from('playoff_picks').upsert(rows, { onConflict: 'player_name,match_id' });
+    setSaving(false);
+    if (error) { showToast('Save failed - check connection'); console.error(error); return; }
+    setSaved(true);
+    showToast('Bracket picks saved!');
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const syncFromEspn = useCallback(async () => {
+    setEspnSyncing(true);
+    try {
+      const resp = await fetch(`${ESPN_PROXY_URL}?dates=${TOURNAMENT_DATES}`);
+      if (!resp.ok) throw new Error('ESPN proxy error ' + resp.status);
+      const data = await resp.json();
+      const events = data?.events || [];
+      const rows = events.map(parsePlayoffEvent).filter(Boolean);
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from('playoff_matches').upsert(rows, { onConflict: 'id' });
+        if (error) throw error;
+        setMatches(prev => {
+          const byId = {};
+          prev.forEach(m => { byId[m.id] = m; });
+          rows.forEach(r => { byId[r.id] = { ...byId[r.id], ...r }; });
+          return Object.values(byId);
+        });
+      }
+      setEspnLastSync(new Date());
+      setEspnError(false);
+      showToast(rows.length > 0 ? `Synced ${rows.length} playoff match${rows.length === 1 ? '' : 'es'}` : 'No playoff fixtures available yet');
+    } catch (err) {
+      console.error('ESPN sync error', err);
+      setEspnError(true);
+      showToast('ESPN sync failed - check worker proxy');
+    } finally {
+      setEspnSyncing(false);
+    }
+  }, [showToast]);
+
+  const byRound = groupByRound(matches);
+  const hasFixtures = matches.length > 0;
+  const koLocked = !!locks.playoff_picks_locked;
+
+  const total = matches.length;
+  const done = matches.filter(m => picks[m.id]).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const lastSyncLabel = espnLastSync
+    ? espnLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  return (
+    <div className="app">
+      <div className="header">
+        <div className="header-left">
+          <span className="trophy">🏆</span>
+          <div>
+            <h1>BTB WC 2026</h1>
+            <div className="header-sub">Playoff bracket</div>
+          </div>
+        </div>
+        <a className="top-link" href="./index.html">Standings &amp; leaderboard &rarr;</a>
+      </div>
+
+      {loading ? (
+        <div className="loading"><div className="spinner"></div>Loading tournament data...</div>
+      ) : (
+        <>
+          <div className="card espn-sync-card">
+            <div>
+              <div className="lock-title">Playoff fixtures from ESPN</div>
+              <div className="lock-sub">
+                {espnError ? 'Sync failed \u2014 check Cloudflare worker proxy' : lastSyncLabel ? `Last synced ${lastSyncLabel} \u00b7 ${total} matches loaded` : hasFixtures ? `${total} matches loaded` : 'Tap Sync now once the group stage ends'}
+              </div>
+            </div>
+            <button className="btn" onClick={syncFromEspn} disabled={espnSyncing}>
+              {espnSyncing ? 'Syncing...' : 'Sync now'}
+            </button>
+          </div>
+
+          {!hasFixtures ? (
+            <div className="empty-state">
+              <div className="icon">🏗️</div>
+              The playoff bracket isn't available yet &mdash; it opens once the Round of 32 fixtures are
+              confirmed at the end of the group stage (after June 27). Tap "Sync now" to check.
+              <div style={{marginTop:'1rem'}}>
+                <a className="top-link" href="./picks.html">Make your group stage picks &rarr;</a>
+              </div>
+            </div>
+          ) : !active ? (
+            <div>
+              <p className="section-label">Who are you?</p>
+              <div className="card">
+                <div className="player-setup">
+                  <input type="text" placeholder="Enter your name" value={name}
+                    onChange={e => setName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') registerOrSelect(); }} />
+                  <button className="btn primary" onClick={registerOrSelect}>Continue</button>
+                </div>
+                {players.length > 0 && (
+                  <>
+                    <p style={{fontSize:'12px', color:'var(--text-tertiary)', margin:'1rem 0 0.5rem'}}>Or tap your name if you've already registered</p>
+                    <div className="player-selector">
+                      {players.map(p => (
+                        <button key={p} className="player-btn" onClick={() => { setActive(p); localStorage.setItem('wc2026_player', p); }}>{p}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="card" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px'}}>
+                <div>
+                  <div style={{fontSize:'13px', fontWeight:600}}>Picking as {active}</div>
+                  <div style={{fontSize:'12px', color:'var(--text-tertiary)', marginTop:'2px'}}>Not you? Switch player below.</div>
+                </div>
+                <button className="btn" onClick={switchPlayer}>Switch</button>
+              </div>
+
+              {koLocked && (
+                <div className="lock-banner">
+                  <span>🔒</span>
+                  <span>Playoff picks are locked &mdash; the knockout stage has started.</span>
+                </div>
+              )}
+
+              <div className="card" style={{marginTop:'1rem'}}>
+                <p style={{fontSize:'13px', color:'var(--text-secondary)'}}>
+                  Pick a winner for every match. Points per correct pick: Round of 32 = 1pt, Round of 16 = 2pts,
+                  Quarter-finals = 3pts, Semi-finals = 4pts, Final = 5pts.
+                </p>
+              </div>
+
+              <div style={{display:'flex', alignItems:'center', gap:'10px', margin:'1.25rem 0'}}>
+                <div className="progress-bar"><div className="progress-fill" style={{width: `${pct}%`}}></div></div>
+                <span style={{fontSize:'12px', color:'var(--text-secondary)', whiteSpace:'nowrap'}}>{done}/{total} picked</span>
+              </div>
+
+              {ROUND_ORDER.map(r => {
+                const roundMatches = byRound[r] || [];
+                if (roundMatches.length === 0) return null;
+                return (
+                  <div key={r}>
+                    <div className="ko-round-label">{ROUND_LABELS[r]}</div>
+                    {roundMatches.map(m => (
+                      <MatchCard key={m.id} m={m} pick={picks[m.id]} onPick={onPick} locked={koLocked} />
+                    ))}
+                  </div>
+                );
+              })}
+
+              <button className={`save-btn ${saved ? 'saved' : ''}`} onClick={onSave} disabled={saving || koLocked}>
+                {saving ? 'Saving...' : saved ? '✓ Saved' : koLocked ? 'Picks locked' : 'Save my bracket'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="footer-note">BTB World Cup 2026 Fantasy Challenge</div>
+      <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
