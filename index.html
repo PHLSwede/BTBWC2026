@@ -470,6 +470,7 @@ function Header({ players, resultsCount, syncOk, onRefresh, refreshing }) {
         </div>
       </div>
       <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+        <a href="./picks.html" style={{fontSize:'13px', color:'var(--blue-text)', fontWeight:500, textDecoration:'none', whiteSpace:'nowrap'}}>Make picks &rarr;</a>
         <div className="sync-badge">
           <span className={`sync-dot ${syncOk ? '' : 'err'}`}></span>
           {syncOk ? 'Live' : 'Offline'}
