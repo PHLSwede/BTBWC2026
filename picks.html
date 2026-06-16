@@ -107,7 +107,9 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react" data-type="script">
+<script type="text/babel" data-presets="react" data-type="script" data-plugins="transform-react-jsx">
+/* @jsxRuntime classic */
+/* @jsx React.createElement */
 const { useState, useEffect, useCallback } = React;
 
 const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
