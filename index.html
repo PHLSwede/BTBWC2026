@@ -6,7 +6,7 @@
 <title>BTB WC 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root {
@@ -136,12 +136,12 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react,env">
+<script type="text/babel" data-presets="react">
 const { useState, useEffect, useCallback } = React;
 
 const SUPABASE_URL = "https://wmxxomiuzdhmvysefrjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_oMyje3R_YGvTETd1qtLTCg_KC314Teu";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_PASSWORD = "btb2026";
 const ESPN_PROXY_URL = "https://guitar-proxy.tight-meadow-3e46.workers.dev/wc2026";
 const TOURNAMENT_DATES = "20260611-20260719";
@@ -163,20 +163,20 @@ const GROUPS = {
 const GROUP_NAMES = Object.keys(GROUPS);
 
 const FLAGS = {
-  'Mexico': '\u{1F1F2}\u{1F1FD}', 'South Africa': '\u{1F1FF}\u{1F1E6}', 'South Korea': '\u{1F1F0}\u{1F1F7}', 'Korea Republic': '\u{1F1F0}\u{1F1F7}', 'Czechia': '\u{1F1E8}\u{1F1FF}', 'Czech Republic': '\u{1F1E8}\u{1F1FF}',
-  'Switzerland': '\u{1F1E8}\u{1F1ED}', 'Canada': '\u{1F1E8}\u{1F1E6}', 'Qatar': '\u{1F1F6}\u{1F1E6}', 'Bosnia & Herzegovina': '\u{1F1E7}\u{1F1E6}', 'Bosnia and Herzegovina': '\u{1F1E7}\u{1F1E6}',
-  'Brazil': '\u{1F1E7}\u{1F1F7}', 'Morocco': '\u{1F1F2}\u{1F1E6}', 'Haiti': '\u{1F1ED}\u{1F1F9}', 'Scotland': '\u{1F3F4}',
-  'USA': '\u{1F1FA}\u{1F1F8}', 'United States': '\u{1F1FA}\u{1F1F8}', 'Turkey': '\u{1F1F9}\u{1F1F7}', 'Türkiye': '\u{1F1F9}\u{1F1F7}', 'Australia': '\u{1F1E6}\u{1F1FA}', 'Paraguay': '\u{1F1F5}\u{1F1FE}',
-  'Germany': '\u{1F1E9}\u{1F1EA}', 'Ecuador': '\u{1F1EA}\u{1F1E8}', 'Ivory Coast': '\u{1F1E8}\u{1F1EE}', "Côte d'Ivoire": '\u{1F1E8}\u{1F1EE}', 'Curacao': '\u{1F1E8}\u{1F1FC}', 'Curaçao': '\u{1F1E8}\u{1F1FC}',
-  'Netherlands': '\u{1F1F3}\u{1F1F1}', 'Japan': '\u{1F1EF}\u{1F1F5}', 'Sweden': '\u{1F1F8}\u{1F1EA}', 'Tunisia': '\u{1F1F9}\u{1F1F3}',
-  'Belgium': '\u{1F1E7}\u{1F1EA}', 'Egypt': '\u{1F1EA}\u{1F1EC}', 'Iran': '\u{1F1EE}\u{1F1F7}', 'IR Iran': '\u{1F1EE}\u{1F1F7}', 'New Zealand': '\u{1F1F3}\u{1F1FF}',
-  'Spain': '\u{1F1EA}\u{1F1F8}', 'Cape Verde': '\u{1F1E8}\u{1F1FB}', 'Cabo Verde': '\u{1F1E8}\u{1F1FB}', 'Saudi Arabia': '\u{1F1F8}\u{1F1E6}', 'Uruguay': '\u{1F1FA}\u{1F1FE}',
-  'France': '\u{1F1EB}\u{1F1F7}', 'Senegal': '\u{1F1F8}\u{1F1F3}', 'Iraq': '\u{1F1EE}\u{1F1F6}', 'Norway': '\u{1F1F3}\u{1F1F4}',
-  'Argentina': '\u{1F1E6}\u{1F1F7}', 'Algeria': '\u{1F1E9}\u{1F1FF}', 'Austria': '\u{1F1E6}\u{1F1F9}', 'Jordan': '\u{1F1EF}\u{1F1F4}',
-  'Portugal': '\u{1F1F5}\u{1F1F9}', 'DR Congo': '\u{1F1E8}\u{1F1E9}', 'Congo DR': '\u{1F1E8}\u{1F1E9}', 'Uzbekistan': '\u{1F1FA}\u{1F1FF}', 'Colombia': '\u{1F1E8}\u{1F1F4}',
-  'England': '\u{1F3F4}', 'Croatia': '\u{1F1ED}\u{1F1F7}', 'Ghana': '\u{1F1EC}\u{1F1ED}', 'Panama': '\u{1F1F5}\u{1F1E6}'
+  'Mexico': '🇲🇽', 'South Africa': '🇿🇦', 'South Korea': '🇰🇷', 'Korea Republic': '🇰🇷', 'Czechia': '🇨🇿', 'Czech Republic': '🇨🇿',
+  'Switzerland': '🇨🇭', 'Canada': '🇨🇦', 'Qatar': '🇶🇦', 'Bosnia & Herzegovina': '🇧🇦', 'Bosnia and Herzegovina': '🇧🇦',
+  'Brazil': '🇧🇷', 'Morocco': '🇲🇦', 'Haiti': '🇭🇹', 'Scotland': '🏴',
+  'USA': '🇺🇸', 'United States': '🇺🇸', 'Turkey': '🇹🇷', 'Türkiye': '🇹🇷', 'Australia': '🇦🇺', 'Paraguay': '🇵🇾',
+  'Germany': '🇩🇪', 'Ecuador': '🇪🇨', 'Ivory Coast': '🇨🇮', "Côte d'Ivoire": '🇨🇮', 'Curacao': '🇨🇼', 'Curaçao': '🇨🇼',
+  'Netherlands': '🇳🇱', 'Japan': '🇯🇵', 'Sweden': '🇸🇪', 'Tunisia': '🇹🇳',
+  'Belgium': '🇧🇪', 'Egypt': '🇪🇬', 'Iran': '🇮🇷', 'IR Iran': '🇮🇷', 'New Zealand': '🇳🇿',
+  'Spain': '🇪🇸', 'Cape Verde': '🇨🇻', 'Cabo Verde': '🇨🇻', 'Saudi Arabia': '🇸🇦', 'Uruguay': '🇺🇾',
+  'France': '🇫🇷', 'Senegal': '🇸🇳', 'Iraq': '🇮🇶', 'Norway': '🇳🇴',
+  'Argentina': '🇦🇷', 'Algeria': '🇩🇿', 'Austria': '🇦🇹', 'Jordan': '🇯🇴',
+  'Portugal': '🇵🇹', 'DR Congo': '🇨🇩', 'Congo DR': '🇨🇩', 'Uzbekistan': '🇺🇿', 'Colombia': '🇨🇴',
+  'England': '🏴', 'Croatia': '🇭🇷', 'Ghana': '🇬🇭', 'Panama': '🇵🇦'
 };
-function flagFor(team) { return FLAGS[team] || '\u{1F30D}'; }
+function flagFor(team) { return FLAGS[team] || '🌍'; }
 
 // Map ESPN team display names back to our canonical roster names
 const ESPN_NAME_MAP = {
@@ -287,11 +287,11 @@ function App() {
   const loadAll = useCallback(async () => {
     try {
       const [{ data: pl, error: e1 }, { data: gp, error: e2 }, { data: st, error: e3 }, { data: pm, error: e4 }, { data: pp, error: e5 }] = await Promise.all([
-        supabase.from('players').select('*').order('created_at', { ascending: true }),
-        supabase.from('group_picks').select('*'),
-        supabase.from('tournament_status').select('*').eq('id', 1).maybeSingle(),
-        supabase.from('playoff_matches').select('*'),
-        supabase.from('playoff_picks').select('*')
+        db.from('players').select('*').order('created_at', { ascending: true }),
+        db.from('group_picks').select('*'),
+        db.from('tournament_status').select('*').eq('id', 1).maybeSingle(),
+        db.from('playoff_matches').select('*'),
+        db.from('playoff_picks').select('*')
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
@@ -340,14 +340,14 @@ function App() {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
-    const channel = supabase.channel('wc2026-changes')
+    const channel = db.channel('wc2026-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'group_picks' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_status' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'playoff_matches' }, loadAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'playoff_picks' }, loadAll)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { db.removeChannel(channel); };
   }, [loadAll]);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -359,9 +359,9 @@ function App() {
   }, [loadAll, showToast]);
 
   const removePlayer = async (name) => {
-    const { error } = await supabase.from('players').delete().eq('name', name);
+    const { error } = await db.from('players').delete().eq('name', name);
     if (error) { showToast('Could not remove player'); console.error(error); return; }
-    await supabase.from('group_picks').delete().eq('player_name', name);
+    await db.from('group_picks').delete().eq('player_name', name);
     setPlayers(prev => prev.filter(p => p !== name));
     setGroupPicks(prev => { const c = { ...prev }; delete c[name]; return c; });
     showToast(`${name} removed`);
@@ -385,7 +385,7 @@ function App() {
   };
 
   const setLock = async (field, value) => {
-    const { error } = await supabase.from('tournament_status')
+    const { error } = await db.from('tournament_status')
       .upsert({ id: 1, [field]: value }, { onConflict: 'id' });
     if (error) { showToast('Could not update lock'); console.error(error); return; }
     setLocks(prev => ({ ...prev, [field]: value }));
